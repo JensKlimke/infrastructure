@@ -1,0 +1,26 @@
+# Let's Encrypt certificates and private keys
+letsencrypt/
+
+# Docker volumes
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
