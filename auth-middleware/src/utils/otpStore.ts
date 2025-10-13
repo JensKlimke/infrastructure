@@ -75,7 +75,8 @@ class OTPStore {
    */
   storeOTP(email: string, code: string): void {
     const normalizedEmail = email.toLowerCase().trim();
-    const codeHash = this.hashCode(code);
+    const normalizedCode = code.toUpperCase().trim();
+    const codeHash = this.hashCode(normalizedCode);
     const now = Date.now();
 
     this.store.set(normalizedEmail, {
@@ -94,6 +95,7 @@ class OTPStore {
    */
   verifyOTP(email: string, code: string): boolean {
     const normalizedEmail = email.toLowerCase().trim();
+    const normalizedCode = code.toUpperCase().trim();
     const entry = this.store.get(normalizedEmail);
 
     if (!entry) {
@@ -114,8 +116,8 @@ class OTPStore {
     // Increment attempts
     entry.attempts++;
 
-    // Verify code using constant-time comparison
-    const codeHash = this.hashCode(code);
+    // Verify code using constant-time comparison (case-insensitive)
+    const codeHash = this.hashCode(normalizedCode);
     const expectedHash = Buffer.from(entry.codeHash, 'hex');
     const actualHash = Buffer.from(codeHash, 'hex');
 
