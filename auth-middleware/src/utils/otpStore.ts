@@ -23,10 +23,11 @@ class OTPStore {
   }
 
   /**
-   * Generate a 6-character OTP code using [A-Z0-9]
+   * Generate a 6-character OTP code using easily distinguishable characters
+   * Excludes: 0 (zero), O, 1 (one), I, L (easily confused)
    */
   generateCode(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
     const bytes = randomBytes(6);
     let code = '';
 

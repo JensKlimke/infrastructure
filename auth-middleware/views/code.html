@@ -31,24 +31,11 @@
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
         }
 
-        h1 {
-            font-size: 24px;
-            font-weight: 600;
-            color: #09090b;
-            margin-bottom: 8px;
-            letter-spacing: -0.025em;
-        }
-
         .subtitle {
-            color: #71717a;
-            font-size: 14px;
+            color: #18181b;
+            font-size: 16px;
             margin-bottom: 32px;
             line-height: 1.5;
-        }
-
-        .email-display {
-            font-weight: 500;
-            color: #18181b;
         }
 
         .form-group {
@@ -123,20 +110,6 @@
             border: 1px solid #fecaca;
             line-height: 1.5;
         }
-
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 16px;
-            color: #71717a;
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.15s;
-        }
-
-        .back-link:hover {
-            color: #18181b;
-        }
     </style>
     <script>
         // Auto-format and limit input to 6 characters
@@ -151,11 +124,7 @@
 </head>
 <body>
     <div class="code-container">
-        <h1>Check your email</h1>
-        <p class="subtitle">
-            We sent a verification code to<br>
-            <span class="email-display">{{EMAIL}}</span>
-        </p>
+        <p class="subtitle">Enter the verification code sent to {{EMAIL}}</p>
 
         {{ERROR}}
 
@@ -164,7 +133,6 @@
             <input type="hidden" name="redirect" value="{{REDIRECT_URL}}">
 
             <div class="form-group">
-                <label for="code">Verification code</label>
                 <input
                     type="text"
                     id="code"
@@ -180,8 +148,6 @@
 
             <button type="submit">Verify</button>
         </form>
-
-        <a href="/login?redirect={{REDIRECT_URL}}" class="back-link">← Back to login</a>
     </div>
 </body>
 </html>

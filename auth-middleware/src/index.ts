@@ -39,7 +39,7 @@ app.use(helmet({
 // Rate limiting middleware
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requests per window
+  limit: 50, // 50 requests per window
   message: 'Too many login attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -47,7 +47,7 @@ const loginLimiter = rateLimit({
 
 const codeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts per window (allows for 3 OTP attempts with some buffer)
+  limit: 10, // 10 attempts per window (allows for 3 OTP attempts with some buffer)
   message: 'Too many verification attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
