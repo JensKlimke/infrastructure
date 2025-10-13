@@ -8,13 +8,19 @@ services:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.filename=/traefik-tls.yml"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
       - "--ping=true"
     ports:
       - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
       - "${TRAEFIK_DASHBOARD_PORT:-8083}:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/certs:ro
+      - ./traefik-tls.yml:/traefik-tls.yml:ro
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 10s
@@ -30,11 +36,17 @@ services:
     container_name: marlene-web
     labels:
       - "traefik.enable=true"
-      # HTTP router only (no HTTPS/TLS)
+      # HTTP router
       - "traefik.http.routers.web-http.rule=Host(`${DOMAIN:-localhost}`) || Host(`www.${DOMAIN:-localhost}`)"
       - "traefik.http.routers.web-http.entrypoints=web"
       - "traefik.http.routers.web-http.priority=1"
       - "traefik.http.routers.web-http.middlewares=strip-user-header,auth-middleware"
+      # HTTPS router
+      - "traefik.http.routers.web-https.rule=Host(`${DOMAIN:-localhost}`) || Host(`www.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.web-https.entrypoints=websecure"
+      - "traefik.http.routers.web-https.priority=1"
+      - "traefik.http.routers.web-https.middlewares=strip-user-header,auth-middleware"
+      - "traefik.http.routers.web-https.tls=true"
       # Strip x-user header from client requests (security)
       - "traefik.http.middlewares.strip-user-header.headers.customrequestheaders.x-user="
       # Service
@@ -64,11 +76,17 @@ services:
       - "traefik.http.middlewares.auth-middleware.forwardauth.authRequestHeaders=Cookie"
       - "traefik.http.middlewares.auth-middleware.forwardauth.authResponseHeaders=x-user"
       - "traefik.http.middlewares.auth-middleware.forwardauth.addAuthCookiesToResponse=auth_token"
-      # Direct routes for login and code pages (no auth middleware)
-      - "traefik.http.routers.auth-pages.rule=Host(`${DOMAIN:-localhost}`) && (PathPrefix(`/login`) || PathPrefix(`/code`))"
-      - "traefik.http.routers.auth-pages.entrypoints=web"
-      - "traefik.http.routers.auth-pages.priority=100"
-      - "traefik.http.routers.auth-pages.service=auth-middleware"
+      # Direct routes for login and code pages - HTTP
+      - "traefik.http.routers.auth-pages-http.rule=Host(`${DOMAIN:-localhost}`) && (PathPrefix(`/login`) || PathPrefix(`/code`))"
+      - "traefik.http.routers.auth-pages-http.entrypoints=web"
+      - "traefik.http.routers.auth-pages-http.priority=100"
+      - "traefik.http.routers.auth-pages-http.service=auth-middleware"
+      # Direct routes for login and code pages - HTTPS
+      - "traefik.http.routers.auth-pages-https.rule=Host(`${DOMAIN:-localhost}`) && (PathPrefix(`/login`) || PathPrefix(`/code`))"
+      - "traefik.http.routers.auth-pages-https.entrypoints=websecure"
+      - "traefik.http.routers.auth-pages-https.priority=100"
+      - "traefik.http.routers.auth-pages-https.tls=true"
+      - "traefik.http.routers.auth-pages-https.service=auth-middleware"
       # Service
       - "traefik.http.services.auth-middleware.loadbalancer.server.port=3000"
     healthcheck:

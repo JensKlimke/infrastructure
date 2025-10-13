@@ -1,6 +1,9 @@
 # Let's Encrypt certificates and private keys
 letsencrypt/
 
+# Local development certificates
+certs/
+
 # Docker volumes
 *.log
 

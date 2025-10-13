@@ -38,45 +38,49 @@
             line-height: 1.5;
         }
 
-        .form-group {
+        .code-inputs {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
             margin-bottom: 24px;
         }
 
-        label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            color: #18181b;
-            margin-bottom: 8px;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 12px 16px;
+        .code-input {
+            width: 48px;
+            height: 56px;
             font-size: 24px;
-            font-weight: 500;
-            letter-spacing: 8px;
+            font-weight: 600;
             text-align: center;
             text-transform: uppercase;
             font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
             color: #09090b;
             background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
             transition: all 0.15s;
             outline: none;
         }
 
-        input[type="text"]:focus {
+        .code-input:focus {
             border-color: #18181b;
             box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
         }
 
-        input[type="text"]::placeholder {
-            letter-spacing: normal;
-            font-size: 14px;
-            font-weight: normal;
-            color: #a1a1aa;
+        .code-input:disabled {
+            background: #fafafa;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 400px) {
+            .code-inputs {
+                gap: 8px;
+            }
+
+            .code-input {
+                width: 40px;
+                height: 48px;
+                font-size: 20px;
+            }
         }
 
         button {
@@ -100,6 +104,11 @@
             background: #09090b;
         }
 
+        /* Hide button when JavaScript is enabled (auto-submit handles it) */
+        .js-enabled button {
+            display: none;
+        }
+
         .error {
             background: #fef2f2;
             color: #991b1b;
@@ -112,38 +121,152 @@
         }
     </style>
     <script>
-        // Auto-format and limit input to 6 characters
-        function formatCode(input) {
-            let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-            if (value.length > 6) {
-                value = value.substring(0, 6);
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.code-input');
+            const form = document.querySelector('form');
+            const hiddenInput = document.getElementById('code');
+            const container = document.querySelector('.code-container');
+
+            // Mark JavaScript as enabled to hide submit button
+            container.classList.add('js-enabled');
+
+            // Handle input on each box
+            inputs.forEach((input, index) => {
+                // Auto-select content on focus
+                input.addEventListener('focus', function() {
+                    this.select();
+                });
+
+                // Handle click (for better mobile experience)
+                input.addEventListener('click', function() {
+                    this.select();
+                });
+
+                input.addEventListener('input', function() {
+                    // Only allow alphanumeric characters
+                    let value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+                    // If multiple characters (from paste or mobile keyboard), take first
+                    if (value.length > 1) {
+                        value = value.charAt(value.length - 1);
+                    }
+
+                    this.value = value;
+
+                    // Auto-advance to next input
+                    if (value.length === 1 && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                        inputs[index + 1].select();
+                    }
+
+                    // Update hidden input and check if complete
+                    updateHiddenInput();
+                });
+
+                // Handle keyboard navigation and deletion
+                input.addEventListener('keydown', function(e) {
+                    // Backspace: move to previous input if current is empty
+                    if (e.key === 'Backspace') {
+                        if (!this.value && index > 0) {
+                            e.preventDefault();
+                            inputs[index - 1].focus();
+                            inputs[index - 1].select();
+                        }
+                    }
+                    // Delete: clear current and move to next
+                    else if (e.key === 'Delete') {
+                        e.preventDefault();
+                        this.value = '';
+                        if (index < inputs.length - 1) {
+                            inputs[index + 1].focus();
+                            inputs[index + 1].select();
+                        }
+                        updateHiddenInput();
+                    }
+                    // Left arrow: move to previous input
+                    else if (e.key === 'ArrowLeft' && index > 0) {
+                        e.preventDefault();
+                        inputs[index - 1].focus();
+                        inputs[index - 1].select();
+                    }
+                    // Right arrow: move to next input
+                    else if (e.key === 'ArrowRight' && index < inputs.length - 1) {
+                        e.preventDefault();
+                        inputs[index + 1].focus();
+                        inputs[index + 1].select();
+                    }
+                    // Home: jump to first input
+                    else if (e.key === 'Home') {
+                        e.preventDefault();
+                        inputs[0].focus();
+                        inputs[0].select();
+                    }
+                    // End: jump to last input
+                    else if (e.key === 'End') {
+                        e.preventDefault();
+                        inputs[inputs.length - 1].focus();
+                        inputs[inputs.length - 1].select();
+                    }
+                });
+
+                // Handle paste
+                input.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pastedData = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+                    // Distribute pasted characters across inputs starting from current position
+                    for (let i = 0; i < Math.min(pastedData.length, inputs.length - index); i++) {
+                        inputs[index + i].value = pastedData.charAt(i);
+                    }
+
+                    // Focus the appropriate input after paste
+                    const lastFilledIndex = Math.min(index + pastedData.length, inputs.length - 1);
+                    inputs[lastFilledIndex].focus();
+                    inputs[lastFilledIndex].select();
+
+                    // Update hidden input and check if complete
+                    updateHiddenInput();
+                });
+            });
+
+            // Update hidden input with combined value
+            function updateHiddenInput() {
+                const code = Array.from(inputs).map(input => input.value).join('');
+                hiddenInput.value = code;
+
+                // Auto-submit when all 6 characters are filled
+                if (code.length === 6) {
+                    // Small delay to allow user to see the complete code
+                    setTimeout(function() {
+                        form.submit();
+                    }, 150);
+                }
             }
-            input.value = value;
-        }
+
+            // Focus and select first input on load
+            inputs[0].focus();
+            inputs[0].select();
+        });
     </script>
 </head>
 <body>
     <div class="code-container">
-        <p class="subtitle">Enter the verification code sent to {{EMAIL}}</p>
+        <p class="subtitle">Enter the verification code sent by email</p>
 
         {{ERROR}}
 
         <form action="/code" method="POST">
             <input type="hidden" name="email" value="{{EMAIL}}">
             <input type="hidden" name="redirect" value="{{REDIRECT_URL}}">
+            <input type="hidden" id="code" name="code" value="">
 
-            <div class="form-group">
-                <input
-                    type="text"
-                    id="code"
-                    name="code"
-                    placeholder="Enter code"
-                    maxlength="6"
-                    required
-                    autofocus
-                    oninput="formatCode(this)"
-                    autocomplete="off"
-                >
+            <div class="code-inputs">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off" inputmode="text" aria-label="Digit 1">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off" inputmode="text" aria-label="Digit 2">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off" inputmode="text" aria-label="Digit 3">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off" inputmode="text" aria-label="Digit 4">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off" inputmode="text" aria-label="Digit 5">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off" inputmode="text" aria-label="Digit 6">
             </div>
 
             <button type="submit">Verify</button>

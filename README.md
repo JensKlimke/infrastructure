@@ -32,9 +32,73 @@ Your site is now live at `https://yourdomain.com` with automatic HTTPS.
 - **Traefik** - Reverse proxy with Let's Encrypt on ports 80/443
 - **Web** - Nginx serving static content
 
+## Local Development with HTTPS
+
+For local development, use `docker-compose.local.yml` which includes HTTPS support with self-signed certificates.
+
+### First-Time Setup
+
+1. **Generate self-signed certificates**:
+   ```bash
+   ./scripts/generate-local-certs.sh
+   ```
+   This creates `certs/localhost.crt` and `certs/localhost.key`.
+
+2. **Set up environment variables**:
+   ```bash
+   cp .env.example .env
+   nano .env  # Set COOKIE_SECRET and RESEND_API_KEY
+   ```
+
+3. **Start services**:
+   ```bash
+   docker compose -f docker-compose.local.yml up -d
+   ```
+
+4. **Access your site**:
+   - HTTP: http://localhost
+   - HTTPS: https://localhost (your browser will show a security warning for self-signed certificates)
+
+### Trusting the Certificate (Optional)
+
+To avoid browser warnings, you can either:
+
+1. **Manually trust the certificate** (varies by browser):
+   - Chrome/Edge: Click "Advanced" → "Proceed to localhost"
+   - Add `certs/localhost.crt` to your system's trusted certificates
+
+2. **Use mkcert** for automatically trusted certificates:
+   ```bash
+   # Install mkcert
+   brew install mkcert  # macOS
+   # or follow instructions at https://github.com/FiloSottile/mkcert
+
+   # Generate trusted certificates
+   mkcert -install
+   mkcert -cert-file certs/localhost.crt -key-file certs/localhost.key localhost 127.0.0.1 ::1
+
+   # Restart services
+   docker compose -f docker-compose.local.yml restart traefik
+   ```
+
+### Why HTTPS for Local Development?
+
+HTTPS is required for local development when:
+- Testing authentication flows
+- Browser security features force HTTPS redirects
+- Testing secure cookies and HSTS headers
+- Matching production environment behavior
+
 ## Common Commands
 
 ```bash
+# Local development
+docker compose -f docker-compose.local.yml ps          # Check status
+docker compose -f docker-compose.local.yml logs -f     # View logs
+docker compose -f docker-compose.local.yml restart     # Restart services
+docker compose -f docker-compose.local.yml down        # Stop services
+
+# Production
 docker compose ps          # Check status
 docker compose logs -f     # View logs
 docker compose restart     # Restart services
@@ -43,6 +107,7 @@ docker compose down        # Stop services
 
 ## Security
 
-- `.env` and `letsencrypt/` are git-ignored
+- `.env`, `letsencrypt/`, and `certs/` are git-ignored
 - Traefik dashboard on port 8080 (restrict access in production)
 - Docker socket mounted read-only
+- Self-signed certificates for local development only (never use in production)

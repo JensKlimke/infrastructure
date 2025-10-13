@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth';
 import { verifyEmailConnection } from './utils/email';
+import { otpStore } from './utils/otpStore';
 
 // Validate required environment variables
 if (!process.env.COOKIE_SECRET) {
@@ -28,7 +29,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for templates
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for templates
       imgSrc: ["'self'", "data:"],
     },
   },
@@ -74,6 +75,9 @@ async function startServer() {
   // Graceful shutdown handler
   const shutdown = (signal: string) => {
     console.log(`${signal} received, starting graceful shutdown...`);
+
+    // Stop OTP cleanup interval
+    otpStore.stopCleanup();
 
     server.close(() => {
       console.log('HTTP server closed');
