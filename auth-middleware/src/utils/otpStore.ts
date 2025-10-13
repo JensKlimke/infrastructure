@@ -5,14 +5,17 @@ interface OTPEntry {
   attempts: number;
   expiresAt: number;
   createdAt: number;
+  lastRequestAt: number;
 }
 
 const OTP_EXPIRATION_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 3;
+const OTP_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute cooldown between OTP requests
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // Cleanup every 5 minutes
 
 class OTPStore {
   private store: Map<string, OTPEntry> = new Map();
+  private cleanupInterval?: NodeJS.Timeout;
 
   constructor() {
     // Start automatic cleanup of expired OTPs
@@ -42,6 +45,31 @@ class OTPStore {
   }
 
   /**
+   * Check if an email can request a new OTP (cooldown check)
+   * Returns true if allowed, false if still in cooldown
+   */
+  canRequestOTP(email: string): boolean {
+    const normalizedEmail = email.toLowerCase().trim();
+    const entry = this.store.get(normalizedEmail);
+
+    if (!entry) {
+      return true; // No previous OTP, can request
+    }
+
+    const now = Date.now();
+
+    // If expired, can request new one
+    if (now > entry.expiresAt) {
+      this.store.delete(normalizedEmail);
+      return true;
+    }
+
+    // Check cooldown period
+    const timeSinceLastRequest = now - entry.lastRequestAt;
+    return timeSinceLastRequest >= OTP_REQUEST_COOLDOWN_MS;
+  }
+
+  /**
    * Store an OTP for an email address
    */
   storeOTP(email: string, code: string): void {
@@ -53,7 +81,8 @@ class OTPStore {
       codeHash,
       attempts: 0,
       expiresAt: now + OTP_EXPIRATION_MS,
-      createdAt: now
+      createdAt: now,
+      lastRequestAt: now
     });
   }
 
@@ -150,9 +179,24 @@ class OTPStore {
    * Start automatic cleanup interval
    */
   private startCleanup(): void {
-    setInterval(() => {
+    this.cleanupInterval = setInterval(() => {
       this.cleanup();
     }, CLEANUP_INTERVAL_MS);
+
+    // Unref to not prevent process exit
+    if (this.cleanupInterval.unref) {
+      this.cleanupInterval.unref();
+    }
+  }
+
+  /**
+   * Stop automatic cleanup (for graceful shutdown)
+   */
+  stopCleanup(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = undefined;
+    }
   }
 
   /**

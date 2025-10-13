@@ -9,6 +9,7 @@ const CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // Cleanup every hour
 
 class TokenStore {
   private store: Map<string, TokenEntry> = new Map();
+  private cleanupInterval?: NodeJS.Timeout;
 
   constructor() {
     // Start automatic cleanup of expired tokens
@@ -82,9 +83,24 @@ class TokenStore {
    * Start automatic cleanup interval
    */
   private startCleanup(): void {
-    setInterval(() => {
+    this.cleanupInterval = setInterval(() => {
       this.cleanup();
     }, CLEANUP_INTERVAL_MS);
+
+    // Unref to not prevent process exit
+    if (this.cleanupInterval.unref) {
+      this.cleanupInterval.unref();
+    }
+  }
+
+  /**
+   * Stop automatic cleanup (for graceful shutdown)
+   */
+  stopCleanup(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = undefined;
+    }
   }
 
   /**

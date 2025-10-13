@@ -12,8 +12,8 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            background: #fafafa;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -23,24 +23,19 @@
 
         .login-container {
             background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 48px;
-            max-width: 420px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 48px 40px;
+            max-width: 400px;
             width: 100%;
-        }
-
-        h1 {
-            font-size: 28px;
-            font-weight: 600;
-            color: #1a202c;
-            margin-bottom: 8px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
         }
 
         .subtitle {
-            color: #718096;
-            font-size: 14px;
+            color: #18181b;
+            font-size: 16px;
             margin-bottom: 32px;
+            line-height: 1.5;
         }
 
         .form-group {
@@ -51,62 +46,67 @@
             display: block;
             font-size: 14px;
             font-weight: 500;
-            color: #4a5568;
+            color: #18181b;
             margin-bottom: 8px;
         }
 
         input[type="email"] {
             width: 100%;
-            padding: 12px 16px;
-            font-size: 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            transition: all 0.2s;
+            padding: 10px 12px;
+            font-size: 14px;
+            color: #09090b;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            transition: all 0.15s;
             outline: none;
         }
 
         input[type="email"]:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #18181b;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+        }
+
+        input[type="email"]::placeholder {
+            color: #a1a1aa;
         }
 
         button {
             width: 100%;
-            padding: 14px;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
             color: white;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #18181b;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: background 0.15s;
         }
 
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            background: #27272a;
         }
 
         button:active {
-            transform: translateY(0);
+            background: #09090b;
         }
 
         .error {
-            background: #fee;
-            color: #c53030;
+            background: #fef2f2;
+            color: #991b1b;
             padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            border-radius: 6px;
+            margin-bottom: 24px;
             font-size: 14px;
-            border: 1px solid #fc8181;
+            border: 1px solid #fecaca;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <h1>Welcome</h1>
-        <p class="subtitle">Please enter your email to continue</p>
+        <p class="subtitle">Enter your email to sign in to your account</p>
 
         {{ERROR}}
 
@@ -114,18 +114,17 @@
             <input type="hidden" name="redirect" value="{{REDIRECT_URL}}">
 
             <div class="form-group">
-                <label for="email">Email Address</label>
                 <input
                     type="email"
                     id="email"
                     name="email"
-                    placeholder="you@example.com"
+                    placeholder="name@example.com"
                     required
                     autofocus
                 >
             </div>
 
-            <button type="submit">Continue</button>
+            <button type="submit">Continue with Email</button>
         </form>
     </div>
 </body>

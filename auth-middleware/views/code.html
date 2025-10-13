@@ -12,8 +12,8 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            background: #fafafa;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -23,29 +23,32 @@
 
         .code-container {
             background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 48px;
-            max-width: 420px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 48px 40px;
+            max-width: 400px;
             width: 100%;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
         }
 
         h1 {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 600;
-            color: #1a202c;
+            color: #09090b;
             margin-bottom: 8px;
+            letter-spacing: -0.025em;
         }
 
         .subtitle {
-            color: #718096;
+            color: #71717a;
             font-size: 14px;
             margin-bottom: 32px;
+            line-height: 1.5;
         }
 
         .email-display {
-            font-weight: 600;
-            color: #667eea;
+            font-weight: 500;
+            color: #18181b;
         }
 
         .form-group {
@@ -56,7 +59,7 @@
             display: block;
             font-size: 14px;
             font-weight: 500;
-            color: #4a5568;
+            color: #18181b;
             margin-bottom: 8px;
         }
 
@@ -64,72 +67,75 @@
             width: 100%;
             padding: 12px 16px;
             font-size: 24px;
-            font-weight: 600;
+            font-weight: 500;
             letter-spacing: 8px;
             text-align: center;
             text-transform: uppercase;
-            font-family: monospace;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            transition: all 0.2s;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            color: #09090b;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            transition: all 0.15s;
             outline: none;
         }
 
         input[type="text"]:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #18181b;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
         }
 
         input[type="text"]::placeholder {
             letter-spacing: normal;
             font-size: 14px;
             font-weight: normal;
+            color: #a1a1aa;
         }
 
         button {
             width: 100%;
-            padding: 14px;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
             color: white;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #18181b;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: background 0.15s;
         }
 
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            background: #27272a;
         }
 
         button:active {
-            transform: translateY(0);
+            background: #09090b;
         }
 
         .error {
-            background: #fee;
-            color: #c53030;
+            background: #fef2f2;
+            color: #991b1b;
             padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            border-radius: 6px;
+            margin-bottom: 24px;
             font-size: 14px;
-            border: 1px solid #fc8181;
+            border: 1px solid #fecaca;
+            line-height: 1.5;
         }
 
         .back-link {
             display: block;
             text-align: center;
             margin-top: 16px;
-            color: #667eea;
+            color: #71717a;
             text-decoration: none;
             font-size: 14px;
-            transition: color 0.2s;
+            transition: color 0.15s;
         }
 
         .back-link:hover {
-            color: #764ba2;
+            color: #18181b;
         }
     </style>
     <script>
@@ -145,9 +151,9 @@
 </head>
 <body>
     <div class="code-container">
-        <h1>Check Your Email</h1>
+        <h1>Check your email</h1>
         <p class="subtitle">
-            We sent a 6-character code to<br>
+            We sent a verification code to<br>
             <span class="email-display">{{EMAIL}}</span>
         </p>
 
@@ -158,7 +164,7 @@
             <input type="hidden" name="redirect" value="{{REDIRECT_URL}}">
 
             <div class="form-group">
-                <label for="code">Verification Code</label>
+                <label for="code">Verification code</label>
                 <input
                     type="text"
                     id="code"
@@ -172,7 +178,7 @@
                 >
             </div>
 
-            <button type="submit">Verify Code</button>
+            <button type="submit">Verify</button>
         </form>
 
         <a href="/login?redirect={{REDIRECT_URL}}" class="back-link">← Back to login</a>
