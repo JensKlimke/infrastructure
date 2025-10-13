@@ -46,10 +46,12 @@ services:
       - "traefik.http.routers.web-https.entrypoints=websecure"
       - "traefik.http.routers.web-https.tls=true"
       - "traefik.http.routers.web-https.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.web-https.middlewares=auth-middleware"
+      - "traefik.http.routers.web-https.middlewares=strip-user-header,auth-middleware"
       # Redirect middleware
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      # Strip x-user header from client requests (security)
+      - "traefik.http.middlewares.strip-user-header.headers.customrequestheaders.x-user="
       # Service
       - "traefik.http.services.web.loadbalancer.server.port=8080"
     healthcheck:
@@ -68,19 +70,15 @@ services:
     environment:
       - COOKIE_SECRET=${COOKIE_SECRET:?COOKIE_SECRET environment variable is required}
       - NODE_ENV=production
-      - SMTP_HOST=${SMTP_HOST:?SMTP_HOST environment variable is required}
-      - SMTP_PORT=${SMTP_PORT:?SMTP_PORT environment variable is required}
-      - SMTP_SECURE=${SMTP_SECURE:-false}
-      - SMTP_USER=${SMTP_USER:?SMTP_USER environment variable is required}
-      - SMTP_PASS=${SMTP_PASS:?SMTP_PASS environment variable is required}
-      - SMTP_FROM=${SMTP_FROM}
+      - RESEND_API_KEY=${RESEND_API_KEY:?RESEND_API_KEY environment variable is required}
+      - RESEND_FROM=${RESEND_FROM:-noreply@example.com}
     labels:
       - "traefik.enable=true"
       # Forward Auth middleware configuration
       - "traefik.http.middlewares.auth-middleware.forwardauth.address=http://auth-middleware:3000/auth"
       - "traefik.http.middlewares.auth-middleware.forwardauth.authRequestHeaders=Cookie"
-      - "traefik.http.middlewares.auth-middleware.forwardauth.authResponseHeaders=Location"
-      - "traefik.http.middlewares.auth-middleware.forwardauth.addAuthCookiesToResponse=auth_token,user_email"
+      - "traefik.http.middlewares.auth-middleware.forwardauth.authResponseHeaders=x-user"
+      - "traefik.http.middlewares.auth-middleware.forwardauth.addAuthCookiesToResponse=auth_token"
       # Direct routes for login and code pages (no auth middleware)
       - "traefik.http.routers.auth-pages.rule=Host(`${DOMAIN}`) && (PathPrefix(`/login`) || PathPrefix(`/code`))"
       - "traefik.http.routers.auth-pages.entrypoints=websecure"

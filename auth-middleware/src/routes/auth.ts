@@ -3,6 +3,7 @@ import { renderTemplate } from '../utils/template';
 import { generateToken, setAuthCookie } from '../utils/cookie';
 import { otpStore } from '../utils/otpStore';
 import { sendOTPEmail } from '../utils/email';
+import { tokenStore } from '../utils/tokenStore';
 
 const router = Router();
 
@@ -13,8 +14,18 @@ router.get('/auth', (req: Request, res: Response) => {
   const existingToken = req.signedCookies['auth_token'];
 
   if (existingToken) {
-    console.log('AUTH - Valid token exists');
-    return res.status(200).send();
+    // Look up the email associated with this token
+    const email = tokenStore.getEmail(existingToken);
+
+    if (email) {
+      console.log('AUTH - Valid token exists for user:', email);
+      // Set the x-user header for Traefik to forward to the upstream service
+      res.setHeader('x-user', email);
+      return res.status(200).send();
+    }
+
+    // Token exists but no email mapping (expired or invalid)
+    console.log('AUTH - Token exists but no email mapping found');
   }
 
   console.log('AUTH - No valid token, redirecting to login');

@@ -12,7 +12,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
-const SMTP_HOST = process.env.SMTP_HOST || 'n/a';
 
 // Middleware
 app.use(express.json());
@@ -29,19 +28,18 @@ async function startServer() {
     console.log(`Auth middleware listening on port ${PORT}`);
     console.log(`Environment: ${NODE_ENV}`);
     console.log(`Cookie secret: ${COOKIE_SECRET.substring(0, 5)}...`);
-    console.log(`SMTP server: ${SMTP_HOST}`);
   });
 
-  // Verify SMTP connection (non-blocking in development)
+  // Verify Resend email service (non-blocking in development)
   try {
     await verifyEmailConnection();
   } catch (error) {
-    console.error('SMTP connection warning:', error);
+    console.error('Resend connection warning:', error);
     if (NODE_ENV === 'production') {
-      console.error('SMTP connection failed in production mode. Exiting...');
+      console.error('Resend connection failed in production mode. Exiting...');
       process.exit(1);
     } else {
-      console.log('Continuing in development mode. Email sending will fail until SMTP is configured.');
+      console.log('Continuing in development mode. Email sending will fail until Resend is configured.');
     }
   }
 }
