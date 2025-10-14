@@ -84,20 +84,13 @@ services:
       - "traefik.http.middlewares.auth-middleware.forwardauth.authRequestHeaders=Cookie"
       - "traefik.http.middlewares.auth-middleware.forwardauth.authResponseHeaders=x-user"
       - "traefik.http.middlewares.auth-middleware.forwardauth.addAuthCookiesToResponse=auth_token"
-      # Direct routes for login and code pages (no auth middleware)
-      - "traefik.http.routers.auth-pages.rule=Host(`${DOMAIN}`) && (PathPrefix(`/login`) || PathPrefix(`/code`))"
-      - "traefik.http.routers.auth-pages.entrypoints=websecure"
-      - "traefik.http.routers.auth-pages.priority=100"
-      - "traefik.http.routers.auth-pages.tls=true"
-      - "traefik.http.routers.auth-pages.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.auth-pages.service=auth-middleware"
-      # Auth pages for mongo subdomain
-      - "traefik.http.routers.auth-pages-mongo.rule=Host(`mongo.${DOMAIN}`) && (PathPrefix(`/login`) || PathPrefix(`/code`))"
-      - "traefik.http.routers.auth-pages-mongo.entrypoints=websecure"
-      - "traefik.http.routers.auth-pages-mongo.priority=100"
-      - "traefik.http.routers.auth-pages-mongo.tls=true"
-      - "traefik.http.routers.auth-pages-mongo.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.auth-pages-mongo.service=auth-middleware"
+      # Direct routes for login/code pages - ALL domains and subdomains (no auth middleware)
+      - "traefik.http.routers.auth-pages-all.rule=HostRegexp(`^([a-z0-9-]+\\.)?${DOMAIN}$`) && (PathPrefix(`/login`) || PathPrefix(`/code`))"
+      - "traefik.http.routers.auth-pages-all.entrypoints=websecure"
+      - "traefik.http.routers.auth-pages-all.priority=100"
+      - "traefik.http.routers.auth-pages-all.tls=true"
+      - "traefik.http.routers.auth-pages-all.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.auth-pages-all.service=auth-middleware"
       # Service
       - "traefik.http.services.auth-middleware.loadbalancer.server.port=3000"
     healthcheck:
