@@ -25,11 +25,15 @@ RUN npm ci --only=production
 COPY --from=builder /app/dist ./dist
 COPY views ./views
 
-# Change ownership to non-root user
-RUN chown -R nodejs:nodejs /app
+# Create data directory and set ownership BEFORE switching to non-root user
+RUN mkdir -p /data && \
+    chown -R nodejs:nodejs /app /data
 
 # Switch to non-root user
 USER nodejs
+
+# Declare volume
+VOLUME /data
 
 EXPOSE 3000
 
