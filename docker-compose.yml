@@ -85,6 +85,13 @@ services:
       - "traefik.http.routers.auth-pages.tls=true"
       - "traefik.http.routers.auth-pages.tls.certresolver=letsencrypt"
       - "traefik.http.routers.auth-pages.service=auth-middleware"
+      # Auth pages for mongo subdomain
+      - "traefik.http.routers.auth-pages-mongo.rule=Host(`mongo.${DOMAIN}`) && (PathPrefix(`/login`) || PathPrefix(`/code`))"
+      - "traefik.http.routers.auth-pages-mongo.entrypoints=websecure"
+      - "traefik.http.routers.auth-pages-mongo.priority=100"
+      - "traefik.http.routers.auth-pages-mongo.tls=true"
+      - "traefik.http.routers.auth-pages-mongo.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.auth-pages-mongo.service=auth-middleware"
       # Service
       - "traefik.http.services.auth-middleware.loadbalancer.server.port=3000"
     healthcheck:
