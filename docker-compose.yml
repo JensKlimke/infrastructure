@@ -71,6 +71,12 @@ services:
       - NODE_ENV=production
       - RESEND_API_KEY=${RESEND_API_KEY:?RESEND_API_KEY environment variable is required}
       - RESEND_FROM=${RESEND_FROM:-noreply@example.com}
+      - DOMAIN=${DOMAIN}
+      - ALLOWED_SUBDOMAINS=${ALLOWED_SUBDOMAINS:-}
+      - TOKEN_STORAGE_PATH=/data
+    volumes:
+      - auth-tokens:/data
+    stop_grace_period: 30s
     labels:
       - "traefik.enable=true"
       # Forward Auth middleware configuration
@@ -94,3 +100,7 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+
+volumes:
+  auth-tokens:
+    driver: local

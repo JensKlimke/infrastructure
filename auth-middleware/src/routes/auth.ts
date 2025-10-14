@@ -258,4 +258,28 @@ router.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'healthy' });
 });
 
+// Debug/status endpoint (useful for troubleshooting)
+router.get('/debug/status', (_req: Request, res: Response) => {
+  const now = Date.now();
+  const lastSave = tokenStore.getLastSaveTime();
+  const timeSinceLastSave = lastSave > 0 ? Math.floor((now - lastSave) / 1000) : null;
+
+  res.status(200).json({
+    status: 'ok',
+    tokenStore: {
+      activeTokens: tokenStore.getSize(),
+      lastSaveTime: lastSave > 0 ? new Date(lastSave).toISOString() : 'never',
+      timeSinceLastSave: timeSinceLastSave !== null ? `${timeSinceLastSave}s ago` : 'never',
+    },
+    environment: {
+      nodeEnv: process.env.NODE_ENV,
+      domain: process.env.DOMAIN || 'not set',
+      allowedSubdomains: process.env.ALLOWED_SUBDOMAINS || 'not set',
+      storagePath: process.env.TOKEN_STORAGE_PATH || '/data',
+    },
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 export default router;
