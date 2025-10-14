@@ -78,6 +78,82 @@ router.get('/auth', (req: Request, res: Response) => {
   res.status(302).end();
 });
 
+// Token verification endpoint - GET version (reads from cookie for frontend use)
+router.get('/auth/user', (req: Request, res: Response) => {
+  const token = req.signedCookies['auth_token'];
+
+  if (!token) {
+    return res.status(401).json({
+      valid: false,
+      error: 'Not authenticated'
+    });
+  }
+
+  // Validate token using tokenStore
+  const email = tokenStore.getEmail(token);
+
+  if (email) {
+    console.log('AUTH/USER (GET) - Valid session for user:', email);
+    return res.status(200).json({
+      valid: true,
+      user: {
+        email: email
+      }
+    });
+  }
+
+  // Token is invalid or expired
+  console.log('AUTH/USER (GET) - Invalid or expired session');
+  return res.status(401).json({
+    valid: false,
+    error: 'Session expired'
+  });
+});
+
+// Token verification endpoint - POST version (for backend-to-backend with Bearer token)
+router.post('/auth/user', (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+
+  // Check if Authorization header exists
+  if (!authHeader) {
+    return res.status(401).json({
+      valid: false,
+      error: 'No token provided'
+    });
+  }
+
+  // Validate Bearer token format
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    return res.status(400).json({
+      valid: false,
+      error: 'Invalid authorization header format'
+    });
+  }
+
+  const token = parts[1];
+
+  // Validate token using tokenStore
+  const email = tokenStore.getEmail(token);
+
+  if (email) {
+    console.log('AUTH/USER (POST) - Valid token for user:', email);
+    return res.status(200).json({
+      valid: true,
+      user: {
+        email: email
+      }
+    });
+  }
+
+  // Token is invalid or expired
+  console.log('AUTH/USER (POST) - Invalid or expired token');
+  return res.status(401).json({
+    valid: false,
+    error: 'Invalid or expired token'
+  });
+});
+
 // Login page
 router.get('/auth/login', (req: Request, res: Response) => {
   const redirectUrl = validateRedirectUrl(req.query.redirect as string);

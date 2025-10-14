@@ -55,6 +55,14 @@ const codeLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const userLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // 100 requests per window (backend-to-backend token verification)
+  message: 'Too many token verification requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -63,6 +71,7 @@ app.use(cookieParser(COOKIE_SECRET));
 // Routes with rate limiting
 app.use('/auth/login', loginLimiter);
 app.use('/auth/code', codeLimiter);
+app.use('/auth/user', userLimiter);
 app.use('/', authRoutes);
 
 // Start server with email verification
