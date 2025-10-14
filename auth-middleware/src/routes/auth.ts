@@ -4,6 +4,7 @@ import { generateToken, setAuthCookie, clearAuthCookie } from '../utils/cookie';
 import { otpStore } from '../utils/otpStore';
 import { sendOTPEmail } from '../utils/email';
 import { tokenStore } from '../utils/tokenStore';
+import { validateSubdomain, logSubdomainValidation } from '../utils/subdomainValidator';
 
 const router = Router();
 
@@ -38,6 +39,17 @@ function validateEmail(email: string): boolean {
 router.get('/auth', (req: Request, res: Response) => {
   console.log('AUTH - Cookie:', req.headers.cookie);
 
+  // Validate subdomain for security monitoring
+  const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host;
+  const validationResult = validateSubdomain(forwardedHost as string);
+  logSubdomainValidation(validationResult, 'AUTH');
+
+  // Block request if subdomain validation fails (when allowlist is configured)
+  if (!validationResult.isValid && process.env.ALLOWED_SUBDOMAINS) {
+    console.error('AUTH - Subdomain validation failed, denying access');
+    return res.status(403).send('Access denied: Invalid subdomain');
+  }
+
   const existingToken = req.signedCookies['auth_token'];
 
   if (existingToken) {
@@ -57,7 +69,6 @@ router.get('/auth', (req: Request, res: Response) => {
 
   console.log('AUTH - No valid token, redirecting to login');
   const originalUrl = req.headers['x-forwarded-uri'] || '/';
-  const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host;
   // In development, force http; in production, use the forwarded protocol or default to https
   const NODE_ENV = process.env.NODE_ENV || 'development';
   const forwardedProto = NODE_ENV === 'development' ? 'http' : (req.headers['x-forwarded-proto'] || 'https');
@@ -175,6 +186,11 @@ router.post('/code', (req: Request, res: Response) => {
 
   console.log('CODE - Verifying code for:', email);
 
+  // Validate subdomain for security monitoring
+  const hostname = req.headers.host;
+  const validationResult = validateSubdomain(hostname);
+  logSubdomainValidation(validationResult, 'CODE_VERIFICATION');
+
   // Verify OTP
   const isValid = otpStore.verifyOTP(email, code);
 
@@ -240,6 +256,30 @@ router.get('/logout', (req: Request, res: Response) => {
 // Health check endpoint
 router.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'healthy' });
+});
+
+// Debug/status endpoint (useful for troubleshooting)
+router.get('/debug/status', (_req: Request, res: Response) => {
+  const now = Date.now();
+  const lastSave = tokenStore.getLastSaveTime();
+  const timeSinceLastSave = lastSave > 0 ? Math.floor((now - lastSave) / 1000) : null;
+
+  res.status(200).json({
+    status: 'ok',
+    tokenStore: {
+      activeTokens: tokenStore.getSize(),
+      lastSaveTime: lastSave > 0 ? new Date(lastSave).toISOString() : 'never',
+      timeSinceLastSave: timeSinceLastSave !== null ? `${timeSinceLastSave}s ago` : 'never',
+    },
+    environment: {
+      nodeEnv: process.env.NODE_ENV,
+      domain: process.env.DOMAIN || 'not set',
+      allowedSubdomains: process.env.ALLOWED_SUBDOMAINS || 'not set',
+      storagePath: process.env.TOKEN_STORAGE_PATH || '/data',
+    },
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 export default router;

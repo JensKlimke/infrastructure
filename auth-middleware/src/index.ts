@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth';
 import { verifyEmailConnection } from './utils/email';
 import { otpStore } from './utils/otpStore';
+import { tokenStore } from './utils/tokenStore';
 
 // Validate required environment variables
 if (!process.env.COOKIE_SECRET) {
@@ -66,29 +67,62 @@ app.use('/', authRoutes);
 
 // Start server with email verification
 async function startServer() {
-  // Start server first
+  // Verify persistence directory is writable
+  const isWritable = await tokenStore.verifyPersistenceDirectory();
+  if (!isWritable) {
+    console.error('CRITICAL: Token persistence directory is not writable!');
+    console.error('Tokens will NOT persist across restarts.');
+    if (NODE_ENV === 'production') {
+      console.error('Refusing to start in production without working persistence.');
+      process.exit(1);
+    }
+  }
+
+  // Load persisted tokens before starting server
+  try {
+    await tokenStore.loadFromFile();
+    console.log(`Token persistence: Loaded ${tokenStore.getSize()} tokens from disk`);
+  } catch (error) {
+    console.error('Token persistence: Failed to load tokens on startup:', error);
+    // Continue with startup even if load fails
+  }
+
+  // Start server
   const server = app.listen(PORT, () => {
     console.log(`Auth middleware listening on port ${PORT}`);
     console.log(`Environment: ${NODE_ENV}`);
+    console.log(`Token persistence: Auto-save enabled (every 5 minutes)`);
   });
 
   // Graceful shutdown handler
-  const shutdown = (signal: string) => {
+  const shutdown = async (signal: string) => {
     console.log(`${signal} received, starting graceful shutdown...`);
 
-    // Stop OTP cleanup interval
+    // Stop automatic intervals
     otpStore.stopCleanup();
+    tokenStore.stopCleanup();
+    tokenStore.stopAutoSave();
+
+    // Save tokens to file before shutting down
+    try {
+      console.log(`Token persistence: Saving ${tokenStore.getSize()} tokens before shutdown...`);
+      await tokenStore.saveToFile();
+      console.log('Token persistence: Successfully saved tokens before shutdown');
+    } catch (error) {
+      console.error('Token persistence: Failed to save tokens during shutdown:', error);
+      // Continue with shutdown even if save fails
+    }
 
     server.close(() => {
       console.log('HTTP server closed');
       process.exit(0);
     });
 
-    // Force shutdown after 10 seconds
+    // Force shutdown after 25 seconds (increased for save time)
     setTimeout(() => {
       console.error('Forced shutdown after timeout');
       process.exit(1);
-    }, 10000);
+    }, 25000);
   };
 
   // Register shutdown handlers
