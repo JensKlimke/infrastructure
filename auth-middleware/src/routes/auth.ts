@@ -72,14 +72,14 @@ router.get('/auth', (req: Request, res: Response) => {
   // In development, force http; in production, use the forwarded protocol or default to https
   const NODE_ENV = process.env.NODE_ENV || 'development';
   const forwardedProto = NODE_ENV === 'development' ? 'http' : (req.headers['x-forwarded-proto'] || 'https');
-  const redirectUrl = `${forwardedProto}://${forwardedHost}/login?redirect=${encodeURIComponent(originalUrl as string)}`;
+  const redirectUrl = `${forwardedProto}://${forwardedHost}/auth/login?redirect=${encodeURIComponent(originalUrl as string)}`;
   console.log('AUTH - Redirect URL:', redirectUrl);
   res.setHeader('Location', redirectUrl);
   res.status(302).end();
 });
 
 // Login page
-router.get('/login', (req: Request, res: Response) => {
+router.get('/auth/login', (req: Request, res: Response) => {
   const redirectUrl = validateRedirectUrl(req.query.redirect as string);
 
   // Set cache-control headers to prevent caching of auth pages
@@ -96,7 +96,7 @@ router.get('/login', (req: Request, res: Response) => {
 });
 
 // Login form submission - Generate and send OTP
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/auth/login', async (req: Request, res: Response) => {
   const { email, redirect } = req.body;
 
   if (!email) {
@@ -139,7 +139,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
     // Redirect to code verification page
     const validatedRedirect = validateRedirectUrl(redirect);
-    const redirectUrl = `/code?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(validatedRedirect)}`;
+    const redirectUrl = `/auth/code?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(validatedRedirect)}`;
     console.log('LOGIN - Redirect URL:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
@@ -154,12 +154,12 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 // Code verification page
-router.get('/code', (req: Request, res: Response) => {
+router.get('/auth/code', (req: Request, res: Response) => {
   const email = req.query.email as string;
   const redirectUrl = validateRedirectUrl(req.query.redirect as string);
 
   if (!email) {
-    return res.redirect('/login');
+    return res.redirect('/auth/login');
   }
 
   // Set cache-control headers to prevent caching of auth pages
@@ -177,7 +177,7 @@ router.get('/code', (req: Request, res: Response) => {
 });
 
 // Code verification submission
-router.post('/code', (req: Request, res: Response) => {
+router.post('/auth/code', (req: Request, res: Response) => {
   const { email, code, redirect } = req.body;
 
   if (!email || !code) {
@@ -220,7 +220,7 @@ router.post('/code', (req: Request, res: Response) => {
 });
 
 // Logout endpoint
-router.post('/logout', (req: Request, res: Response) => {
+router.post('/auth/logout', (req: Request, res: Response) => {
   const token = req.signedCookies['auth_token'];
 
   if (token) {
@@ -233,10 +233,10 @@ router.post('/logout', (req: Request, res: Response) => {
   clearAuthCookie(res);
 
   // Redirect to login
-  res.redirect('/login');
+  res.redirect('/auth/login');
 });
 
-router.get('/logout', (req: Request, res: Response) => {
+router.get('/auth/logout', (req: Request, res: Response) => {
   // Redirect GET requests to POST
   const token = req.signedCookies['auth_token'];
 
@@ -250,36 +250,12 @@ router.get('/logout', (req: Request, res: Response) => {
   clearAuthCookie(res);
 
   // Redirect to login
-  res.redirect('/login');
+  res.redirect('/auth/login');
 });
 
 // Health check endpoint
 router.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'healthy' });
-});
-
-// Debug/status endpoint (useful for troubleshooting)
-router.get('/debug/status', (_req: Request, res: Response) => {
-  const now = Date.now();
-  const lastSave = tokenStore.getLastSaveTime();
-  const timeSinceLastSave = lastSave > 0 ? Math.floor((now - lastSave) / 1000) : null;
-
-  res.status(200).json({
-    status: 'ok',
-    tokenStore: {
-      activeTokens: tokenStore.getSize(),
-      lastSaveTime: lastSave > 0 ? new Date(lastSave).toISOString() : 'never',
-      timeSinceLastSave: timeSinceLastSave !== null ? `${timeSinceLastSave}s ago` : 'never',
-    },
-    environment: {
-      nodeEnv: process.env.NODE_ENV,
-      domain: process.env.DOMAIN || 'not set',
-      allowedSubdomains: process.env.ALLOWED_SUBDOMAINS || 'not set',
-      storagePath: process.env.TOKEN_STORAGE_PATH || '/data',
-    },
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-  });
 });
 
 export default router;

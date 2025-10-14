@@ -61,8 +61,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(COOKIE_SECRET));
 
 // Routes with rate limiting
-app.use('/login', loginLimiter);
-app.use('/code', codeLimiter);
+app.use('/auth/login', loginLimiter);
+app.use('/auth/code', codeLimiter);
 app.use('/', authRoutes);
 
 // Start server with email verification

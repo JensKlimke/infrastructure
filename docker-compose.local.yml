@@ -82,13 +82,13 @@ services:
       - "traefik.http.middlewares.auth-middleware.forwardauth.authRequestHeaders=Cookie"
       - "traefik.http.middlewares.auth-middleware.forwardauth.authResponseHeaders=x-user"
       - "traefik.http.middlewares.auth-middleware.forwardauth.addAuthCookiesToResponse=auth_token"
-      # Direct routes for login/code pages - HTTP - ALL domains and subdomains
-      - "traefik.http.routers.auth-pages-http.rule=HostRegexp(`^([a-z0-9-]+\\.)?${DOMAIN:-localhost}$`) && (PathPrefix(`/login`) || PathPrefix(`/code`))"
+      # Direct routes for /auth paths - HTTP - ALL domains and subdomains
+      - "traefik.http.routers.auth-pages-http.rule=HostRegexp(`^([a-z0-9-]+\\.)?${DOMAIN:-localhost}$`) && PathPrefix(`/auth`)"
       - "traefik.http.routers.auth-pages-http.entrypoints=web"
       - "traefik.http.routers.auth-pages-http.priority=100"
       - "traefik.http.routers.auth-pages-http.service=auth-middleware"
-      # Direct routes for login/code pages - HTTPS - ALL domains and subdomains
-      - "traefik.http.routers.auth-pages-https.rule=HostRegexp(`^([a-z0-9-]+\\.)?${DOMAIN:-localhost}$`) && (PathPrefix(`/login`) || PathPrefix(`/code`))"
+      # Direct routes for /auth paths - HTTPS - ALL domains and subdomains
+      - "traefik.http.routers.auth-pages-https.rule=HostRegexp(`^([a-z0-9-]+\\.)?${DOMAIN:-localhost}$`) && PathPrefix(`/auth`)"
       - "traefik.http.routers.auth-pages-https.entrypoints=websecure"
       - "traefik.http.routers.auth-pages-https.priority=100"
       - "traefik.http.routers.auth-pages-https.tls=true"
