@@ -49,7 +49,7 @@ echo ""
 
 # Start the production stack
 echo "🚀 Starting all services..."
-docker-compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
+docker-compose -f docker-compose.yml -f docker-compose.mongo.yml up -d --build
 echo ""
 
 # Wait a moment for services to initialize
