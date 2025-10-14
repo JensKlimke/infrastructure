@@ -14,7 +14,7 @@ interface PersistedData {
 
 const TOKEN_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 const CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // Cleanup every hour
-const AUTO_SAVE_INTERVAL_MS = 5 * 60 * 1000; // Auto-save every 5 minutes
+const AUTO_SAVE_INTERVAL_MS = 60 * 1000; // Auto-save every 1 minutes
 const PERSISTENCE_DIR = process.env.TOKEN_STORAGE_PATH || '/data';
 const PERSISTENCE_FILE = join(PERSISTENCE_DIR, 'tokens.json');
 
