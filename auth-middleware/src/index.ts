@@ -91,7 +91,7 @@ async function startServer() {
   const server = app.listen(PORT, () => {
     console.log(`Auth middleware listening on port ${PORT}`);
     console.log(`Environment: ${NODE_ENV}`);
-    console.log(`Token persistence: Auto-save enabled (every 5 minutes)`);
+    console.log(`Token persistence: Auto-save enabled`);
   });
 
   // Graceful shutdown handler
