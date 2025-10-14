@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { renderTemplate } from '../utils/template';
-import { generateToken, setAuthCookie } from '../utils/cookie';
+import { generateToken, setAuthCookie, clearAuthCookie } from '../utils/cookie';
 import { otpStore } from '../utils/otpStore';
 import { sendOTPEmail } from '../utils/email';
 import { tokenStore } from '../utils/tokenStore';
@@ -214,7 +214,7 @@ router.post('/logout', (req: Request, res: Response) => {
   }
 
   // Clear auth cookie
-  res.clearCookie('auth_token', { path: '/' });
+  clearAuthCookie(res);
 
   // Redirect to login
   res.redirect('/login');
@@ -231,7 +231,7 @@ router.get('/logout', (req: Request, res: Response) => {
   }
 
   // Clear auth cookie
-  res.clearCookie('auth_token', { path: '/' });
+  clearAuthCookie(res);
 
   // Redirect to login
   res.redirect('/login');
