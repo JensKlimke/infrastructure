@@ -13,7 +13,7 @@ export function getCookieOptions() {
   const options: any = {
     httpOnly: true,
     secure: NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict', // Enhanced CSRF protection - cookie only sent to same-site requests
     signed: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/'
@@ -21,6 +21,7 @@ export function getCookieOptions() {
 
   // Set domain to work with all subdomains (e.g., .example.com)
   // The leading dot allows the cookie to be shared across all subdomains
+  // Required for Traefik ForwardAuth to work across multiple subdomains
   if (DOMAIN) {
     options.domain = `.${DOMAIN}`;
   }
