@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { renderTemplate } from '../utils/template';
-import { generateToken, setAuthCookie, clearAuthCookie } from '../utils/cookie';
+import { generateToken, setAuthCookie, clearAuthCookie, COOKIE_NAME } from '../utils/cookie';
 import { otpStore } from '../utils/otpStore';
 import { sendOTPEmail } from '../utils/email';
 import { tokenStore } from '../utils/tokenStore';
@@ -50,21 +50,21 @@ router.get('/auth', (req: Request, res: Response) => {
     return res.status(403).send('Access denied: Invalid subdomain');
   }
 
-  const existingToken = req.signedCookies['auth_token'];
+  const existingToken = req.signedCookies[COOKIE_NAME];
 
   if (existingToken) {
-    // Look up the email associated with this token
-    const email = tokenStore.getEmail(existingToken);
+    // Look up the email associated with this token (must be a session token)
+    const email = tokenStore.getEmail(existingToken, 'session');
 
     if (email) {
-      console.log('AUTH - Valid token exists for user:', email);
+      console.log('AUTH - Valid session token exists for user:', email);
       // Set the x-user header for Traefik to forward to the upstream service
       res.setHeader('x-user', email);
       return res.status(200).send();
     }
 
-    // Token exists but no email mapping (expired or invalid)
-    console.log('AUTH - Token exists but no email mapping found');
+    // Token exists but no email mapping (expired, invalid, or wrong type)
+    console.log('AUTH - Token exists but no valid session mapping found');
   }
 
   console.log('AUTH - No valid token, redirecting to login');
@@ -78,19 +78,51 @@ router.get('/auth', (req: Request, res: Response) => {
   res.status(302).end();
 });
 
-// Token verification endpoint - GET version (reads from cookie for frontend use)
+// Token verification endpoint - supports both cookie (session) and Authorization header (access token)
 router.get('/auth/user', (req: Request, res: Response) => {
-  const token = req.signedCookies['auth_token'];
+  // First, check for Authorization header with Bearer token (access token)
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
+  if (authHeader) {
+    // Validate Bearer token format
+    const parts = authHeader.split(' ');
+    if (parts.length === 2 && parts[0] === 'Bearer') {
+      const accessToken = parts[1];
+
+      // Validate as access token
+      const email = tokenStore.getEmail(accessToken, 'access');
+
+      if (email) {
+        console.log('AUTH/USER (GET) - Valid access token for user:', email);
+        return res.status(200).json({
+          valid: true,
+          user: {
+            email: email
+          }
+        });
+      }
+
+      // Access token was provided but invalid
+      console.log('AUTH/USER (GET) - Invalid or expired access token');
+      return res.status(401).json({
+        valid: false,
+        error: 'Invalid or expired access token'
+      });
+    }
+  }
+
+  // Fall back to cookie-based session token
+  const sessionToken = req.signedCookies[COOKIE_NAME];
+
+  if (!sessionToken) {
     return res.status(401).json({
       valid: false,
       error: 'Not authenticated'
     });
   }
 
-  // Validate token using tokenStore
-  const email = tokenStore.getEmail(token);
+  // Validate session token from cookie
+  const email = tokenStore.getEmail(sessionToken, 'session');
 
   if (email) {
     console.log('AUTH/USER (GET) - Valid session for user:', email);
@@ -102,7 +134,7 @@ router.get('/auth/user', (req: Request, res: Response) => {
     });
   }
 
-  // Token is invalid or expired
+  // Token is invalid, expired, or not a session token
   console.log('AUTH/USER (GET) - Invalid or expired session');
   return res.status(401).json({
     valid: false,
@@ -110,47 +142,33 @@ router.get('/auth/user', (req: Request, res: Response) => {
   });
 });
 
-// Token verification endpoint - POST version (for backend-to-backend with Bearer token)
-router.post('/auth/user', (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
+// Access token generation endpoint - returns an access token for API use
+router.get('/auth/access_token', (req: Request, res: Response) => {
+  const sessionToken = req.signedCookies[COOKIE_NAME];
 
-  // Check if Authorization header exists
-  if (!authHeader) {
+  if (!sessionToken) {
     return res.status(401).json({
-      valid: false,
-      error: 'No token provided'
+      error: 'Not authenticated'
     });
   }
 
-  // Validate Bearer token format
-  const parts = authHeader.split(' ');
-  if (parts.length !== 2 || parts[0] !== 'Bearer') {
-    return res.status(400).json({
-      valid: false,
-      error: 'Invalid authorization header format'
+  // Validate session token from cookie
+  const email = tokenStore.getEmail(sessionToken, 'session');
+
+  if (!email) {
+    return res.status(401).json({
+      error: 'Invalid or expired session'
     });
   }
 
-  const token = parts[1];
+  // Generate new access token
+  const accessToken = generateToken();
+  tokenStore.storeToken(accessToken, email, 'access');
 
-  // Validate token using tokenStore
-  const email = tokenStore.getEmail(token);
+  console.log('ACCESS_TOKEN - Generated access token for user:', email);
 
-  if (email) {
-    console.log('AUTH/USER (POST) - Valid token for user:', email);
-    return res.status(200).json({
-      valid: true,
-      user: {
-        email: email
-      }
-    });
-  }
-
-  // Token is invalid or expired
-  console.log('AUTH/USER (POST) - Invalid or expired token');
-  return res.status(401).json({
-    valid: false,
-    error: 'Invalid or expired token'
+  return res.status(200).json({
+    access_token: accessToken
   });
 });
 
@@ -297,7 +315,7 @@ router.post('/auth/code', (req: Request, res: Response) => {
 
 // Logout endpoint
 router.post('/auth/logout', (req: Request, res: Response) => {
-  const token = req.signedCookies['auth_token'];
+  const token = req.signedCookies[COOKIE_NAME];
 
   if (token) {
     // Remove token from store
@@ -314,7 +332,7 @@ router.post('/auth/logout', (req: Request, res: Response) => {
 
 router.get('/auth/logout', (req: Request, res: Response) => {
   // Redirect GET requests to POST
-  const token = req.signedCookies['auth_token'];
+  const token = req.signedCookies[COOKIE_NAME];
 
   if (token) {
     // Remove token from store

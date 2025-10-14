@@ -3,6 +3,7 @@ import { join } from 'path';
 
 interface TokenEntry {
   email: string;
+  type: 'session' | 'access';
   expiresAt: number;
   createdAt: number;
 }
@@ -35,12 +36,13 @@ class TokenStore {
   /**
    * Store a token with its associated email address
    */
-  storeToken(token: string, email: string): void {
+  storeToken(token: string, email: string, type: 'session' | 'access' = 'session'): void {
     const normalizedEmail = email.toLowerCase().trim();
     const now = Date.now();
 
     this.store.set(token, {
       email: normalizedEmail,
+      type: type,
       expiresAt: now + TOKEN_EXPIRATION_MS,
       createdAt: now
     });
@@ -48,9 +50,9 @@ class TokenStore {
 
   /**
    * Get the email associated with a token
-   * Returns null if token is invalid or expired
+   * Returns null if token is invalid, expired, or doesn't match the required type
    */
-  getEmail(token: string): string | null {
+  getEmail(token: string, requiredType?: 'session' | 'access'): string | null {
     const entry = this.store.get(token);
 
     if (!entry) {
@@ -60,6 +62,11 @@ class TokenStore {
     // Check expiration
     if (Date.now() > entry.expiresAt) {
       this.store.delete(token);
+      return null;
+    }
+
+    // Check type if specified
+    if (requiredType && entry.type !== requiredType) {
       return null;
     }
 

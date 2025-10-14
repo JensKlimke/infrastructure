@@ -4,6 +4,9 @@ import { tokenStore } from './tokenStore';
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const DOMAIN = process.env.DOMAIN;
+const COOKIE_NAME = process.env.COOKIE_NAME || 'auth';
+
+export { COOKIE_NAME };
 
 export function generateToken(): string {
   return randomBytes(32).toString('hex');
@@ -30,11 +33,11 @@ export function getCookieOptions() {
 }
 
 export function setAuthCookie(res: Response, token: string, email: string): void {
-  // Store token-email mapping
-  tokenStore.storeToken(token, email);
+  // Store token-email mapping as session token
+  tokenStore.storeToken(token, email, 'session');
 
   // Set auth token cookie
-  res.cookie('auth_token', token, getCookieOptions());
+  res.cookie(COOKIE_NAME, token, getCookieOptions());
 }
 
 export function clearAuthCookie(res: Response): void {
@@ -45,5 +48,5 @@ export function clearAuthCookie(res: Response): void {
     clearOptions.domain = `.${DOMAIN}`;
   }
 
-  res.clearCookie('auth_token', clearOptions);
+  res.clearCookie(COOKIE_NAME, clearOptions);
 }

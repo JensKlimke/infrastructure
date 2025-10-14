@@ -66,6 +66,7 @@ services:
     container_name: auth-middleware
     environment:
       - COOKIE_SECRET=${COOKIE_SECRET:?COOKIE_SECRET environment variable is required}
+      - COOKIE_NAME=${COOKIE_NAME:-auth}
       - NODE_ENV=development
       - RESEND_API_KEY=${RESEND_API_KEY:?RESEND_API_KEY environment variable is required}
       - RESEND_FROM=${RESEND_FROM:-noreply@example.com}
@@ -81,7 +82,7 @@ services:
       - "traefik.http.middlewares.auth-middleware.forwardauth.address=http://auth-middleware:3000/auth"
       - "traefik.http.middlewares.auth-middleware.forwardauth.authRequestHeaders=Cookie"
       - "traefik.http.middlewares.auth-middleware.forwardauth.authResponseHeaders=x-user"
-      - "traefik.http.middlewares.auth-middleware.forwardauth.addAuthCookiesToResponse=auth_token"
+      - "traefik.http.middlewares.auth-middleware.forwardauth.addAuthCookiesToResponse=${COOKIE_NAME:-auth}"
       # Direct routes for /auth paths - HTTP - ALL domains and subdomains
       - "traefik.http.routers.auth-pages-http.rule=HostRegexp(`^([a-z0-9-]+\\.)?${DOMAIN:-localhost}$`) && PathPrefix(`/auth`)"
       - "traefik.http.routers.auth-pages-http.entrypoints=web"
