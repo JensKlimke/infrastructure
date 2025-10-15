@@ -9,10 +9,15 @@ interface OTPEntry {
 }
 
 // OTP configuration - configurable via environment variables
-const OTP_EXPIRATION_MS = parseInt(process.env.OTP_EXPIRATION_MS || '') || 10 * 60 * 1000; // Default: 10 minutes
-const MAX_ATTEMPTS = parseInt(process.env.MAX_OTP_ATTEMPTS || '') || 3; // Default: 3 attempts
-const OTP_REQUEST_COOLDOWN_MS = parseInt(process.env.OTP_REQUEST_COOLDOWN_MS || '') || 60 * 1000; // Default: 1 minute
-const CLEANUP_INTERVAL_MS = parseInt(process.env.OTP_CLEANUP_INTERVAL_MS || '') || 5 * 60 * 1000; // Default: 5 minutes
+const parseEnvInt = (value: string | undefined, defaultValue: number): number => {
+  const parsed = parseInt(value || '');
+  return isNaN(parsed) ? defaultValue : parsed;
+};
+
+const OTP_EXPIRATION_MS = parseEnvInt(process.env.OTP_EXPIRATION_MS, 10 * 60 * 1000); // Default: 10 minutes
+const MAX_ATTEMPTS = parseEnvInt(process.env.MAX_OTP_ATTEMPTS, 3); // Default: 3 attempts
+const OTP_REQUEST_COOLDOWN_MS = parseEnvInt(process.env.OTP_REQUEST_COOLDOWN_MS, 60 * 1000); // Default: 1 minute
+const CLEANUP_INTERVAL_MS = parseEnvInt(process.env.OTP_CLEANUP_INTERVAL_MS, 5 * 60 * 1000); // Default: 5 minutes
 
 class OTPStore {
   private store: Map<string, OTPEntry> = new Map();
