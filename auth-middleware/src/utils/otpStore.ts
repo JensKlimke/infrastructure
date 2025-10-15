@@ -143,26 +143,6 @@ class OTPStore {
   }
 
   /**
-   * Check if an email has a pending OTP that hasn't expired
-   */
-  hasPendingOTP(email: string): boolean {
-    const normalizedEmail = email.toLowerCase().trim();
-    const entry = this.store.get(normalizedEmail);
-
-    if (!entry) {
-      return false;
-    }
-
-    // Check if expired
-    if (Date.now() > entry.expiresAt) {
-      this.store.delete(normalizedEmail);
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
    * Remove expired OTP entries
    */
   private cleanup(): void {

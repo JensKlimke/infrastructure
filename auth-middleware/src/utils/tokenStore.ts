@@ -174,13 +174,6 @@ class TokenStore {
   }
 
   /**
-   * Get last save timestamp (for monitoring)
-   */
-  getLastSaveTime(): number {
-    return this.lastSaveTime;
-  }
-
-  /**
    * Verify persistence directory is writable
    */
   async verifyPersistenceDirectory(): Promise<boolean> {
