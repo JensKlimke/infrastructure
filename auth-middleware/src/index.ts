@@ -2,6 +2,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cors from 'cors';
 import authRoutes from './routes/auth';
 import { verifyEmailConnection } from './utils/email';
 import { otpStore } from './utils/otpStore';
@@ -20,6 +21,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
+const DOMAIN = process.env.DOMAIN || 'localhost';
 
 // Trust proxy - required when behind Traefik/nginx
 app.set('trust proxy', 1);
@@ -32,16 +34,49 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for templates
       scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for templates
       imgSrc: ["'self'", "data:"],
+      formAction: ["'self'", `https://*.${DOMAIN}`, `https://${DOMAIN}`], // Allow form submissions to any subdomain
     },
   },
   // Disable HSTS in development to allow HTTP
   hsts: NODE_ENV === 'production',
 }));
 
-// Rate limiting middleware
+// CORS middleware - allow cross-origin requests from same base domain
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    // Also allow "null" origin (browser sends this for some same-origin form submissions)
+    if (!origin || origin === 'null') {
+      return callback(null, true);
+    }
+
+    try {
+      const originUrl = new URL(origin);
+      const originHostname = originUrl.hostname;
+
+      // Allow if origin is the base domain or any subdomain of it
+      // e.g., localhost, app.localhost, auth.localhost when DOMAIN=localhost
+      if (originHostname === DOMAIN || originHostname.endsWith(`.${DOMAIN}`)) {
+        return callback(null, true);
+      }
+
+      // Reject other origins
+      console.log('CORS - Rejected origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    } catch (e) {
+      console.error('CORS - Invalid origin URL:', origin);
+      callback(new Error('Invalid origin'));
+    }
+  },
+  credentials: true, // Allow cookies to be sent
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Rate limiting middleware - more lenient in development for testing
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 50, // 50 requests per window
+  limit: NODE_ENV === 'development' ? 200 : 50, // More lenient in development
   message: 'Too many login attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -49,7 +84,7 @@ const loginLimiter = rateLimit({
 
 const codeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 10, // 10 attempts per window (allows for 3 OTP attempts with some buffer)
+  limit: NODE_ENV === 'development' ? 100 : 10, // More lenient in development for testing
   message: 'Too many verification attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -57,7 +92,7 @@ const codeLimiter = rateLimit({
 
 const userLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 100, // 100 requests per window (backend-to-backend token verification)
+  limit: NODE_ENV === 'development' ? 500 : 100, // More lenient in development
   message: 'Too many token verification requests, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -69,9 +104,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(COOKIE_SECRET));
 
 // Routes with rate limiting
-app.use('/auth/login', loginLimiter);
-app.use('/auth/code', codeLimiter);
-app.use('/auth/user', userLimiter);
+app.use('/login', loginLimiter);
+app.use('/code', codeLimiter);
+app.use('/user', userLimiter);
 app.use('/', authRoutes);
 
 // Start server with email verification

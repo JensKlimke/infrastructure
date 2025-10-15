@@ -23,30 +23,6 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        .user-info {
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.8);
-            text-align: right;
-        }
-
-        .user-email {
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .logout-link {
-            color: white;
-            text-decoration: underline;
-            display: block;
-            margin-top: 4px;
-        }
-
-        .logout-link:hover {
-            color: white;
-        }
-
         h1 {
             font-size: 4rem;
             font-weight: 300;
@@ -63,47 +39,6 @@
     </style>
 </head>
 <body>
-    <div class="user-info" id="userInfo"></div>
-
     <h1>marlene.cloud</h1>
-
-    <script>
-        // Fetch and display user information
-        async function loadUserInfo() {
-            try {
-                const response = await fetch('/auth/user', {
-                    method: 'GET',
-                    credentials: 'same-origin'
-                });
-
-                const data = await response.json();
-                const userInfoElement = document.getElementById('userInfo');
-
-                if (data.valid && data.user) {
-                    // Display user info as simple text
-                    userInfoElement.innerHTML =
-                        '<span class="user-email">' + escapeHtml(data.user.email) + '</span>' +
-                        '<a href="/auth/logout" class="logout-link">logout</a>';
-                } else {
-                    // Not authenticated - don't display anything
-                    userInfoElement.innerHTML = '';
-                }
-            } catch (error) {
-                console.error('Failed to load user info:', error);
-                // On error, hide the user info
-                document.getElementById('userInfo').innerHTML = '';
-            }
-        }
-
-        // Simple HTML escaping to prevent XSS
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Load user info when page loads
-        document.addEventListener('DOMContentLoaded', loadUserInfo);
-    </script>
 </body>
 </html>

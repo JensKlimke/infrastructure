@@ -10,19 +10,32 @@ const router = Router();
 
 /**
  * Validate redirect URL to prevent open redirect attacks
- * Only allow relative paths or same-origin URLs
+ * Allows relative paths or same-domain URLs
  */
-function validateRedirectUrl(redirect: string | undefined): string {
+function validateRedirectUrl(redirect: string | undefined, baseDomain?: string): string {
   if (!redirect) {
     return '/';
   }
 
-  // Only allow relative paths that start with /
+  // Allow relative paths that start with /
   if (redirect.startsWith('/') && !redirect.startsWith('//')) {
     return redirect;
   }
 
-  // Reject anything else (absolute URLs, protocol-relative URLs, etc.)
+  // Allow full URLs only if they're on the same base domain
+  if (baseDomain && (redirect.startsWith('https://') || redirect.startsWith('http://'))) {
+    try {
+      const url = new URL(redirect);
+      // Check if hostname ends with our base domain (e.g., app.localhost ends with localhost)
+      if (url.hostname === baseDomain || url.hostname.endsWith(`.${baseDomain}`)) {
+        return redirect;
+      }
+    } catch (e) {
+      // Invalid URL, fall through to return '/'
+    }
+  }
+
+  // Reject anything else (protocol-relative URLs, external domains, etc.)
   return '/';
 }
 
@@ -36,7 +49,7 @@ function validateEmail(email: string): boolean {
 }
 
 // Auth validation endpoint (used by Traefik ForwardAuth)
-router.get('/auth', (req: Request, res: Response) => {
+router.get('/verify', (req: Request, res: Response) => {
   console.log('AUTH - Cookie:', req.headers.cookie);
 
   // Validate subdomain for security monitoring
@@ -68,18 +81,28 @@ router.get('/auth', (req: Request, res: Response) => {
   }
 
   console.log('AUTH - No valid token, redirecting to login');
-  const originalUrl = req.headers['x-forwarded-uri'] || '/';
-  // In development, force http; in production, use the forwarded protocol or default to https
-  const NODE_ENV = process.env.NODE_ENV || 'development';
-  const forwardedProto = NODE_ENV === 'development' ? 'http' : (req.headers['x-forwarded-proto'] || 'https');
-  const redirectUrl = `${forwardedProto}://${forwardedHost}/auth/login?redirect=${encodeURIComponent(originalUrl as string)}`;
+  const originalPath = req.headers['x-forwarded-uri'] || '/';
+  const originalHost = forwardedHost as string;
+  // Use the forwarded protocol from the reverse proxy, defaulting to https
+  const forwardedProto = (req.headers['x-forwarded-proto'] as string) || 'https';
+
+  // Construct full original URL (e.g., https://app.localhost/resource)
+  const originalFullUrl = `${forwardedProto}://${originalHost}${originalPath}`;
+
+  const DOMAIN = process.env.DOMAIN || 'localhost';
+  const redirectUrl = `${forwardedProto}://auth.${DOMAIN}/login?redirect=${encodeURIComponent(originalFullUrl)}`;
+  console.log('AUTH - Original URL:', originalFullUrl);
   console.log('AUTH - Redirect URL:', redirectUrl);
   res.setHeader('Location', redirectUrl);
   res.status(302).end();
 });
 
 // Token verification endpoint - supports both cookie (session) and Authorization header (access token)
-router.get('/auth/user', (req: Request, res: Response) => {
+router.get('/user', (req: Request, res: Response) => {
+  console.log('AUTH/USER (GET) - Request received');
+  console.log('AUTH/USER (GET) - Cookie header:', req.headers.cookie);
+  console.log('AUTH/USER (GET) - Signed cookies:', req.signedCookies);
+
   // First, check for Authorization header with Bearer token (access token)
   const authHeader = req.headers.authorization;
 
@@ -143,7 +166,7 @@ router.get('/auth/user', (req: Request, res: Response) => {
 });
 
 // Access token generation endpoint - returns an access token for API use
-router.get('/auth/access_token', (req: Request, res: Response) => {
+router.get('/access_token', (req: Request, res: Response) => {
   const sessionToken = req.signedCookies[COOKIE_NAME];
 
   if (!sessionToken) {
@@ -173,8 +196,9 @@ router.get('/auth/access_token', (req: Request, res: Response) => {
 });
 
 // Login page
-router.get('/auth/login', (req: Request, res: Response) => {
-  const redirectUrl = validateRedirectUrl(req.query.redirect as string);
+router.get('/login', (req: Request, res: Response) => {
+  const DOMAIN = process.env.DOMAIN || 'localhost';
+  const redirectUrl = validateRedirectUrl(req.query.redirect as string, DOMAIN);
 
   // Set cache-control headers to prevent caching of auth pages
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -190,16 +214,18 @@ router.get('/auth/login', (req: Request, res: Response) => {
 });
 
 // Login form submission - Generate and send OTP
-router.post('/auth/login', async (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response) => {
   const { email, redirect } = req.body;
 
   if (!email) {
     return res.status(400).send('Email is required');
   }
 
+  const DOMAIN = process.env.DOMAIN || 'localhost';
+
   // Validate email format
   if (!validateEmail(email)) {
-    const validatedRedirect = validateRedirectUrl(redirect);
+    const validatedRedirect = validateRedirectUrl(redirect, DOMAIN);
     const html = renderTemplate('login', {
       REDIRECT_URL: validatedRedirect,
       ERROR_RAW: '<div class="error">Please enter a valid email address.</div>'
@@ -211,7 +237,7 @@ router.post('/auth/login', async (req: Request, res: Response) => {
 
   // Check cooldown period
   if (!otpStore.canRequestOTP(email)) {
-    const validatedRedirect = validateRedirectUrl(redirect);
+    const validatedRedirect = validateRedirectUrl(redirect, DOMAIN);
     const html = renderTemplate('login', {
       REDIRECT_URL: validatedRedirect,
       ERROR_RAW: '<div class="error">Please wait before requesting another code.</div>'
@@ -221,24 +247,29 @@ router.post('/auth/login', async (req: Request, res: Response) => {
 
   try {
     // Generate OTP code
-    const code = otpStore.generateCode();
+    const NODE_ENV = process.env.NODE_ENV || 'development';
+    const code = NODE_ENV === 'development' ? 'AAAAAA' : otpStore.generateCode();
 
     // Store OTP
     otpStore.storeOTP(email, code);
 
-    // Send email
-    await sendOTPEmail(email, code);
+    // Send email (skip in development)
+    if (NODE_ENV !== 'development') {
+      await sendOTPEmail(email, code);
+    } else {
+      console.log('DEV MODE - Skipping email, OTP code:', code);
+    }
 
     console.log('LOGIN - OTP sent to:', email);
 
     // Redirect to code verification page
-    const validatedRedirect = validateRedirectUrl(redirect);
-    const redirectUrl = `/auth/code?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(validatedRedirect)}`;
+    const validatedRedirect = validateRedirectUrl(redirect, DOMAIN);
+    const redirectUrl = `/code?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(validatedRedirect)}`;
     console.log('LOGIN - Redirect URL:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('LOGIN - Error:', error);
-    const validatedRedirect = validateRedirectUrl(redirect);
+    const validatedRedirect = validateRedirectUrl(redirect, DOMAIN);
     const html = renderTemplate('login', {
       REDIRECT_URL: validatedRedirect,
       ERROR_RAW: '<div class="error">Failed to send verification email. Please try again.</div>'
@@ -248,12 +279,13 @@ router.post('/auth/login', async (req: Request, res: Response) => {
 });
 
 // Code verification page
-router.get('/auth/code', (req: Request, res: Response) => {
+router.get('/code', (req: Request, res: Response) => {
   const email = req.query.email as string;
-  const redirectUrl = validateRedirectUrl(req.query.redirect as string);
+  const DOMAIN = process.env.DOMAIN || 'localhost';
+  const redirectUrl = validateRedirectUrl(req.query.redirect as string, DOMAIN);
 
   if (!email) {
-    return res.redirect('/auth/login');
+    return res.redirect('/login');
   }
 
   // Set cache-control headers to prevent caching of auth pages
@@ -271,7 +303,7 @@ router.get('/auth/code', (req: Request, res: Response) => {
 });
 
 // Code verification submission
-router.post('/auth/code', (req: Request, res: Response) => {
+router.post('/code', (req: Request, res: Response) => {
   const { email, code, redirect } = req.body;
 
   if (!email || !code) {
@@ -285,6 +317,8 @@ router.post('/auth/code', (req: Request, res: Response) => {
   const validationResult = validateSubdomain(hostname);
   logSubdomainValidation(validationResult, 'CODE_VERIFICATION');
 
+  const DOMAIN = process.env.DOMAIN || 'localhost';
+
   // Verify OTP
   const isValid = otpStore.verifyOTP(email, code);
 
@@ -295,14 +329,24 @@ router.post('/auth/code', (req: Request, res: Response) => {
     const token = generateToken();
     setAuthCookie(res, token, email);
 
-    const validatedRedirect = validateRedirectUrl(redirect);
-    console.log('CODE - Cookie set, redirecting to:', validatedRedirect);
-    res.redirect(validatedRedirect);
+    const validatedRedirect = validateRedirectUrl(redirect, DOMAIN);
+
+    // If redirect is a relative path, make it absolute
+    let absoluteRedirect = validatedRedirect;
+    if (validatedRedirect.startsWith('/')) {
+      const NODE_ENV = process.env.NODE_ENV || 'development';
+      const protocol = NODE_ENV === 'development' ? 'https' : (req.headers['x-forwarded-proto'] || 'https');
+      absoluteRedirect = `${protocol}://${DOMAIN}${validatedRedirect}`;
+    }
+
+    console.log('CODE - Cookie set, redirecting to:', absoluteRedirect);
+    console.log('CODE - Set-Cookie headers:', res.getHeaders()['set-cookie']);
+    res.redirect(absoluteRedirect);
   } else {
     console.log('CODE - Invalid code');
 
     // Show error message
-    const validatedRedirect = validateRedirectUrl(redirect);
+    const validatedRedirect = validateRedirectUrl(redirect, DOMAIN);
     const html = renderTemplate('code', {
       EMAIL: email,
       REDIRECT_URL: validatedRedirect,
@@ -314,7 +358,7 @@ router.post('/auth/code', (req: Request, res: Response) => {
 });
 
 // Logout endpoint
-router.post('/auth/logout', (req: Request, res: Response) => {
+router.post('/logout', (req: Request, res: Response) => {
   const token = req.signedCookies[COOKIE_NAME];
 
   if (token) {
@@ -327,10 +371,10 @@ router.post('/auth/logout', (req: Request, res: Response) => {
   clearAuthCookie(res);
 
   // Redirect to login
-  res.redirect('/auth/login');
+  res.redirect('/login');
 });
 
-router.get('/auth/logout', (req: Request, res: Response) => {
+router.get('/logout', (req: Request, res: Response) => {
   // Redirect GET requests to POST
   const token = req.signedCookies[COOKIE_NAME];
 
@@ -344,7 +388,7 @@ router.get('/auth/logout', (req: Request, res: Response) => {
   clearAuthCookie(res);
 
   // Redirect to login
-  res.redirect('/auth/login');
+  res.redirect('/login');
 });
 
 // Health check endpoint

@@ -81,17 +81,20 @@ services:
     labels:
       - "traefik.enable=true"
       # Forward Auth middleware configuration
-      - "traefik.http.middlewares.auth-middleware.forwardauth.address=http://auth-middleware:3000/auth"
+      - "traefik.http.middlewares.auth-middleware.forwardauth.address=http://auth-middleware:3000/verify"
       - "traefik.http.middlewares.auth-middleware.forwardauth.authRequestHeaders=Cookie"
       - "traefik.http.middlewares.auth-middleware.forwardauth.authResponseHeaders=x-user"
       - "traefik.http.middlewares.auth-middleware.forwardauth.addAuthCookiesToResponse=${COOKIE_NAME:-auth}"
-      # Direct routes for /auth paths - ALL domains and subdomains (no auth middleware)
-      - "traefik.http.routers.auth-pages-all.rule=HostRegexp(`^([a-z0-9-]+\\.)?${DOMAIN}$`) && PathPrefix(`/auth`)"
-      - "traefik.http.routers.auth-pages-all.entrypoints=websecure"
-      - "traefik.http.routers.auth-pages-all.priority=100"
-      - "traefik.http.routers.auth-pages-all.tls=true"
-      - "traefik.http.routers.auth-pages-all.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.auth-pages-all.service=auth-middleware"
+      # Direct routes for auth subdomain - HTTP (redirect to HTTPS)
+      - "traefik.http.routers.auth-http.rule=Host(`auth.${DOMAIN}`)"
+      - "traefik.http.routers.auth-http.entrypoints=web"
+      - "traefik.http.routers.auth-http.middlewares=redirect-to-https"
+      # Direct routes for auth subdomain - HTTPS
+      - "traefik.http.routers.auth-https.rule=Host(`auth.${DOMAIN}`)"
+      - "traefik.http.routers.auth-https.entrypoints=websecure"
+      - "traefik.http.routers.auth-https.tls=true"
+      - "traefik.http.routers.auth-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.auth-https.service=auth-middleware"
       # Service
       - "traefik.http.services.auth-middleware.loadbalancer.server.port=3000"
     healthcheck:

@@ -15,15 +15,15 @@ export function generateToken(): string {
 export function getCookieOptions() {
   const options: any = {
     httpOnly: true,
-    secure: NODE_ENV === 'production',
-    sameSite: 'strict', // Enhanced CSRF protection - cookie only sent to same-site requests
+    secure: true,
+    sameSite: 'lax', // Allow cookie with top-level navigations (redirects) but not fetch/XHR
     signed: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/'
   };
 
-  // Set domain to work with all subdomains (e.g., .example.com)
-  // The leading dot allows the cookie to be shared across all subdomains
+  // Set domain to work with all subdomains (e.g., .localhost for *.localhost)
+  // The leading dot is required for cookies to be shared across subdomains
   // Required for Traefik ForwardAuth to work across multiple subdomains
   if (DOMAIN) {
     options.domain = `.${DOMAIN}`;
