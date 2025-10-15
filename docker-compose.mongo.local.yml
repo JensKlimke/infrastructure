@@ -38,17 +38,18 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      # HTTP router
+      # HTTP router (redirect to HTTPS)
       - "traefik.http.routers.mongo-express-http.rule=Host(`mongo.${DOMAIN:-localhost}`)"
       - "traefik.http.routers.mongo-express-http.entrypoints=web"
-      - "traefik.http.routers.mongo-express-http.priority=10"
-      - "traefik.http.routers.mongo-express-http.middlewares=auth-middleware"
+      - "traefik.http.routers.mongo-express-http.middlewares=redirect-to-https"
       # HTTPS router with auth middleware
       - "traefik.http.routers.mongo-express-https.rule=Host(`mongo.${DOMAIN:-localhost}`)"
       - "traefik.http.routers.mongo-express-https.entrypoints=websecure"
-      - "traefik.http.routers.mongo-express-https.priority=10"
       - "traefik.http.routers.mongo-express-https.tls=true"
       - "traefik.http.routers.mongo-express-https.middlewares=auth-middleware"
+      # Redirect middleware
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
       # Service
       - "traefik.http.services.mongo-express.loadbalancer.server.port=8081"
     healthcheck:
