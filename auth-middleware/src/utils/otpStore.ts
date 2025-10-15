@@ -8,10 +8,11 @@ interface OTPEntry {
   lastRequestAt: number;
 }
 
-const OTP_EXPIRATION_MS = 10 * 60 * 1000; // 10 minutes
-const MAX_ATTEMPTS = 3;
-const OTP_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute cooldown between OTP requests
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // Cleanup every 5 minutes
+// OTP configuration - configurable via environment variables
+const OTP_EXPIRATION_MS = parseInt(process.env.OTP_EXPIRATION_MS || '') || 10 * 60 * 1000; // Default: 10 minutes
+const MAX_ATTEMPTS = parseInt(process.env.MAX_OTP_ATTEMPTS || '') || 3; // Default: 3 attempts
+const OTP_REQUEST_COOLDOWN_MS = parseInt(process.env.OTP_REQUEST_COOLDOWN_MS || '') || 60 * 1000; // Default: 1 minute
+const CLEANUP_INTERVAL_MS = parseInt(process.env.OTP_CLEANUP_INTERVAL_MS || '') || 5 * 60 * 1000; // Default: 5 minutes
 
 class OTPStore {
   private store: Map<string, OTPEntry> = new Map();
@@ -207,6 +208,16 @@ class OTPStore {
    */
   getSize(): number {
     return this.store.size;
+  }
+
+  /**
+   * Clear all OTP entries (for testing only)
+   * Returns the number of entries that were cleared
+   */
+  clear(): number {
+    const size = this.store.size;
+    this.store.clear();
+    return size;
   }
 }
 

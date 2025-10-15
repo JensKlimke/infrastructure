@@ -396,4 +396,36 @@ router.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'healthy' });
 });
 
+// Development-only endpoint to reset server state for testing
+router.post('/dev/reset', (req: Request, res: Response) => {
+  const NODE_ENV = process.env.NODE_ENV || 'development';
+
+  // Only allow in non-production environments
+  if (NODE_ENV === 'production') {
+    console.warn('DEV/RESET - Attempted access in production environment');
+    return res.status(403).json({
+      error: 'This endpoint is only available in development mode'
+    });
+  }
+
+  console.log('DEV/RESET - Clearing all server state');
+
+  // Clear OTP store
+  const otpCleared = otpStore.clear();
+
+  // Clear token store
+  const tokensCleared = tokenStore.clear();
+
+  console.log(`DEV/RESET - Cleared ${otpCleared} OTP entries and ${tokensCleared} tokens`);
+
+  res.status(200).json({
+    success: true,
+    message: 'Server state reset successfully',
+    cleared: {
+      otpEntries: otpCleared,
+      tokens: tokensCleared
+    }
+  });
+});
+
 export default router;

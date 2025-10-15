@@ -290,6 +290,16 @@ class TokenStore {
       // Don't throw - continue with empty store
     }
   }
+
+  /**
+   * Clear all tokens (for testing only)
+   * Returns the number of entries that were cleared
+   */
+  clear(): number {
+    const size = this.store.size;
+    this.store.clear();
+    return size;
+  }
 }
 
 // Export singleton instance
