@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   mongodb:
-    image: mongo:8.0
+    build:
+      context: ./mongo
+      dockerfile: Dockerfile
     container_name: mongodb
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME:?MONGO_ROOT_USERNAME environment variable is required}
@@ -13,7 +15,7 @@ services:
     ports:
       - "${MONGO_PORT:-27017}:27017"
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "-u", "${MONGO_ROOT_USERNAME}", "-p", "${MONGO_ROOT_PASSWORD}", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -50,7 +52,7 @@ services:
       # Service
       - "traefik.http.services.mongo-express.loadbalancer.server.port=8081"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8081"]
       interval: 10s
       timeout: 5s
       retries: 3
