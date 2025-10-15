@@ -16,7 +16,7 @@ export function getCookieOptions() {
   const options: any = {
     httpOnly: true,
     secure: true,
-    sameSite: 'lax', // Allow cookie with top-level navigations (redirects) but not fetch/XHR
+    sameSite: 'strict', // Only send cookie in same-site context (works across subdomains with wildcard domain)
     signed: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/'
