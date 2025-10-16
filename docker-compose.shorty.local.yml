@@ -32,7 +32,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3001
-      - DOMAIN=${DOMAIN:-localhost}
+      - DOMAIN=${DOMAIN}
       - MONGODB_URI=mongodb://${SHORTY_MONGO_ROOT_USERNAME}:${SHORTY_MONGO_ROOT_PASSWORD}@shorty-mongodb:27017/shorty?authSource=admin
     depends_on:
       shorty-mongodb:
@@ -40,16 +40,16 @@ services:
     labels:
       - "traefik.enable=true"
       # HTTP router (redirect to HTTPS)
-      - "traefik.http.routers.shorty-backend-http.rule=Host(`api.shorty.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.shorty-backend-http.rule=Host(`api.shorty.${DOMAIN}`)"
       - "traefik.http.routers.shorty-backend-http.entrypoints=web"
       - "traefik.http.routers.shorty-backend-http.middlewares=redirect-to-https"
       # HTTPS OPTIONS router (bypass auth for CORS preflight)
-      - "traefik.http.routers.shorty-backend-options-https.rule=Host(`api.shorty.${DOMAIN:-localhost}`) && Method(`OPTIONS`)"
+      - "traefik.http.routers.shorty-backend-options-https.rule=Host(`api.shorty.${DOMAIN}`) && Method(`OPTIONS`)"
       - "traefik.http.routers.shorty-backend-options-https.entrypoints=websecure"
       - "traefik.http.routers.shorty-backend-options-https.tls=true"
       - "traefik.http.routers.shorty-backend-options-https.priority=100"
       # HTTPS router with auth middleware (all other methods)
-      - "traefik.http.routers.shorty-backend-https.rule=Host(`api.shorty.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.shorty-backend-https.rule=Host(`api.shorty.${DOMAIN}`)"
       - "traefik.http.routers.shorty-backend-https.entrypoints=websecure"
       - "traefik.http.routers.shorty-backend-https.tls=true"
       - "traefik.http.routers.shorty-backend-https.priority=1"
@@ -70,18 +70,18 @@ services:
     image: shorty-frontend:latest
     container_name: shorty-frontend
     environment:
-      - API_URL=https://api.shorty.${DOMAIN:-localhost}
+      - API_URL=https://api.shorty.${DOMAIN}
     depends_on:
       shorty-backend:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
       # HTTP router (redirect to HTTPS)
-      - "traefik.http.routers.shorty-frontend-http.rule=Host(`shorty.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.shorty-frontend-http.rule=Host(`shorty.${DOMAIN}`)"
       - "traefik.http.routers.shorty-frontend-http.entrypoints=web"
       - "traefik.http.routers.shorty-frontend-http.middlewares=redirect-to-https"
       # HTTPS router with auth middleware
-      - "traefik.http.routers.shorty-frontend-https.rule=Host(`shorty.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.shorty-frontend-https.rule=Host(`shorty.${DOMAIN}`)"
       - "traefik.http.routers.shorty-frontend-https.entrypoints=websecure"
       - "traefik.http.routers.shorty-frontend-https.tls=true"
       - "traefik.http.routers.shorty-frontend-https.middlewares=strip-user-header,auth-middleware"

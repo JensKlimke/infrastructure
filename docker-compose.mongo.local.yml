@@ -39,11 +39,11 @@ services:
     labels:
       - "traefik.enable=true"
       # HTTP router (redirect to HTTPS)
-      - "traefik.http.routers.mongo-express-http.rule=Host(`mongo.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.mongo-express-http.rule=Host(`mongo.${DOMAIN}`)"
       - "traefik.http.routers.mongo-express-http.entrypoints=web"
       - "traefik.http.routers.mongo-express-http.middlewares=redirect-to-https"
       # HTTPS router with auth middleware
-      - "traefik.http.routers.mongo-express-https.rule=Host(`mongo.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.mongo-express-https.rule=Host(`mongo.${DOMAIN}`)"
       - "traefik.http.routers.mongo-express-https.entrypoints=websecure"
       - "traefik.http.routers.mongo-express-https.tls=true"
       - "traefik.http.routers.mongo-express-https.middlewares=auth-middleware"

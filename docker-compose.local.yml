@@ -37,12 +37,12 @@ services:
     labels:
       - "traefik.enable=true"
       # HTTP router (redirect to HTTPS)
-      - "traefik.http.routers.web-http.rule=Host(`${DOMAIN:-localhost}`) || Host(`www.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.web-http.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)"
       - "traefik.http.routers.web-http.entrypoints=web"
       - "traefik.http.routers.web-http.priority=1"
       - "traefik.http.routers.web-http.middlewares=redirect-to-https"
       # HTTPS router
-      - "traefik.http.routers.web-https.rule=Host(`${DOMAIN:-localhost}`) || Host(`www.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.web-https.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)"
       - "traefik.http.routers.web-https.entrypoints=websecure"
       - "traefik.http.routers.web-https.priority=1"
       - "traefik.http.routers.web-https.middlewares=strip-user-header,auth-middleware"
@@ -73,7 +73,7 @@ services:
       - NODE_ENV=development
       - RESEND_API_KEY=${RESEND_API_KEY:?RESEND_API_KEY environment variable is required}
       - RESEND_FROM=${RESEND_FROM:-noreply@example.com}
-      - DOMAIN=${DOMAIN:-localhost}
+      - DOMAIN=${DOMAIN}
       - ALLOWED_SUBDOMAINS=${ALLOWED_SUBDOMAINS:-}
       - TOKEN_STORAGE_PATH=/data
       - OTP_REQUEST_COOLDOWN_MS=-1
@@ -88,11 +88,11 @@ services:
       - "traefik.http.middlewares.auth-middleware.forwardauth.authResponseHeaders=x-user"
       - "traefik.http.middlewares.auth-middleware.forwardauth.addAuthCookiesToResponse=${COOKIE_NAME:-auth}"
       # Direct routes for auth subdomain - HTTP (redirect to HTTPS)
-      - "traefik.http.routers.auth-http.rule=Host(`auth.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.auth-http.rule=Host(`auth.${DOMAIN}`)"
       - "traefik.http.routers.auth-http.entrypoints=web"
       - "traefik.http.routers.auth-http.middlewares=redirect-to-https"
       # Direct routes for auth subdomain - HTTPS
-      - "traefik.http.routers.auth-https.rule=Host(`auth.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.auth-https.rule=Host(`auth.${DOMAIN}`)"
       - "traefik.http.routers.auth-https.entrypoints=websecure"
       - "traefik.http.routers.auth-https.tls=true"
       - "traefik.http.routers.auth-https.service=auth-middleware"
@@ -112,15 +112,15 @@ services:
       dockerfile: Dockerfile
     container_name: api
     environment:
-      - DOMAIN=${DOMAIN:-localhost}
+      - DOMAIN=${DOMAIN}
     labels:
       - "traefik.enable=true"
       # HTTP router (redirect to HTTPS)
-      - "traefik.http.routers.api-http.rule=Host(`api.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.api-http.rule=Host(`api.${DOMAIN}`)"
       - "traefik.http.routers.api-http.entrypoints=web"
       - "traefik.http.routers.api-http.middlewares=redirect-to-https"
       # HTTPS router with auth middleware
-      - "traefik.http.routers.api-https.rule=Host(`api.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.api-https.rule=Host(`api.${DOMAIN}`)"
       - "traefik.http.routers.api-https.entrypoints=websecure"
       - "traefik.http.routers.api-https.tls=true"
       - "traefik.http.routers.api-https.middlewares=auth-middleware"
