@@ -13,7 +13,7 @@ test.describe('Authentication Redirect', () => {
     await expect(page.locator('text=Enter your email')).toBeVisible();
 
     // Step 2: Submit email address -> redirected to code page
-    const testEmail = `test-${Date.now()}@example.com`;
+    const testEmail = `test-${Date.now()}-${Math.random().toString(36).substring(7)}@example.com`;
     await page.fill('input[type="email"]', testEmail);
     await page.click('button[type="submit"]');
 

@@ -76,6 +76,7 @@ services:
       - DOMAIN=${DOMAIN:-localhost}
       - ALLOWED_SUBDOMAINS=${ALLOWED_SUBDOMAINS:-}
       - TOKEN_STORAGE_PATH=/data
+      - OTP_REQUEST_COOLDOWN_MS=-1
     volumes:
       - auth-tokens:/data
     stop_grace_period: 30s

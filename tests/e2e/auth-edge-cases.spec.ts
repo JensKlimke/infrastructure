@@ -11,7 +11,7 @@ test.describe('Authentication Edge Cases', () => {
     await page.goto('/');
     await expect(page).toHaveURL(/auth\.example\.test\/login/);
 
-    const testEmail = `test-${Date.now()}@example.com`;
+    const testEmail = `test-${Date.now()}-${Math.random().toString(36).substring(7)}@example.com`;
     await page.fill('input[type="email"]', testEmail);
     await page.click('button[type="submit"]');
 
@@ -37,7 +37,7 @@ test.describe('Authentication Edge Cases', () => {
   test('should persist authentication across multiple page reloads', async ({ page }) => {
     // Complete authentication
     await page.goto('/');
-    const testEmail = `test-${Date.now()}@example.com`;
+    const testEmail = `test-${Date.now()}-${Math.random().toString(36).substring(7)}@example.com`;
 
     await page.fill('input[type="email"]', testEmail);
     await page.click('button[type="submit"]');
@@ -62,7 +62,7 @@ test.describe('Authentication Edge Cases', () => {
   test('should handle accessing login page while already authenticated', async ({ page }) => {
     // Complete authentication flow
     await page.goto('/');
-    const testEmail = `test-${Date.now()}@example.com`;
+    const testEmail = `test-${Date.now()}-${Math.random().toString(36).substring(7)}@example.com`;
 
     await page.fill('input[type="email"]', testEmail);
     await page.click('button[type="submit"]');
