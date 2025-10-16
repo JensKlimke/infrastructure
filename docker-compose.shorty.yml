@@ -70,7 +70,7 @@ services:
     image: jensklimke/shorty-frontend:latest
     container_name: shorty-frontend
     environment:
-      - API_URL=https://api.shorty.${DOMAIN:-localhost}
+      - API_URL=https://api.shorty.${DOMAIN}
     depends_on:
       shorty-backend:
         condition: service_healthy
