@@ -31,14 +31,17 @@ echo 'MongoDB is ready'
 # Check if replica set is already initialized
 RS_STATUS=$(mongosh --quiet --eval 'try { rs.status().ok } catch(e) { 0 }')
 
+# Get hostname for replica set (defaults to 'mongodb' if not set)
+MONGO_HOSTNAME=${MONGO_HOSTNAME:-mongodb}
+
 if [ "$RS_STATUS" = "1" ]; then
   echo 'Replica set already initialized'
 else
-  echo 'Initializing replica set...'
-  mongosh --eval 'rs.initiate({
-    _id: "rs0",
-    members: [{ _id: 0, host: "mongodb:27017" }]
-  })'
+  echo "Initializing replica set with hostname: $MONGO_HOSTNAME..."
+  mongosh --eval "rs.initiate({
+    _id: \"rs0\",
+    members: [{ _id: 0, host: \"${MONGO_HOSTNAME}:27017\" }]
+  })"
 
   # Wait for replica set to be ready
   echo 'Waiting for replica set to be ready...'
