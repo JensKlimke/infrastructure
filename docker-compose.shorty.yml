@@ -30,7 +30,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - CORS_ORIGIN=https://shorty.${DOMAIN}
+      - DOMAIN=${DOMAIN}
       - MONGODB_URI=mongodb://${SHORTY_MONGO_ROOT_USERNAME}:${SHORTY_MONGO_ROOT_PASSWORD}@shorty-mongodb:27017/shorty?authSource=admin
     depends_on:
       shorty-mongodb:
