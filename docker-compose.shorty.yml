@@ -70,7 +70,7 @@ services:
     image: jensklimke/shorty-frontend:latest
     container_name: shorty-frontend
     environment:
-      - VITE_API_URL=https://api.shorty.${DOMAIN}
+      - API_URL=https://api.shorty.${DOMAIN:-localhost}
     depends_on:
       shorty-backend:
         condition: service_healthy
