@@ -13,7 +13,7 @@ echo ""
 cd "$PROJECT_DIR"
 
 # Stop all services
-docker-compose -f docker-compose.yml -f docker-compose.mongo.yml down
+docker-compose -f docker-compose.yml -f docker-compose.mongo.yml -f docker-compose.shorty.yml down
 
 echo ""
 echo "✅ Production stack stopped successfully!"

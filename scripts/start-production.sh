@@ -44,12 +44,12 @@ echo ""
 # Stop any running containers from these compose files
 echo "🛑 Stopping any existing containers..."
 cd "$PROJECT_DIR"
-docker-compose -f docker-compose.yml -f docker-compose.mongo.yml down 2>/dev/null || true
+docker-compose -f docker-compose.yml -f docker-compose.mongo.yml -f docker-compose.shorty.yml down 2>/dev/null || true
 echo ""
 
 # Start the production stack
 echo "🚀 Starting all services..."
-docker-compose -f docker-compose.yml -f docker-compose.mongo.yml up -d --build
+docker-compose -f docker-compose.yml -f docker-compose.mongo.yml -f docker-compose.shorty.yml up -d --build
 echo ""
 
 # Wait a moment for services to initialize
@@ -59,7 +59,7 @@ echo ""
 
 # Show status
 echo "📊 Service Status:"
-docker-compose -f docker-compose.yml -f docker-compose.mongo.yml ps
+docker-compose -f docker-compose.yml -f docker-compose.mongo.yml -f docker-compose.shorty.yml ps
 echo ""
 
 # Show URLs
@@ -68,11 +68,13 @@ echo ""
 echo "🌐 Available services:"
 echo "   - Main website:    https://${DOMAIN}"
 echo "   - Mongo Express:   https://mongo.${DOMAIN}"
+echo "   - Shorty:          https://shorty.${DOMAIN}"
+echo "   - Shorty API:      https://api.shorty.${DOMAIN}"
 echo ""
 echo "📝 Logs:"
-echo "   View all logs:     docker-compose -f docker-compose.yml -f docker-compose.mongo.yml logs -f"
+echo "   View all logs:     docker-compose -f docker-compose.yml -f docker-compose.mongo.yml -f docker-compose.shorty.yml logs -f"
 echo "   View specific:     docker logs <container-name>"
 echo ""
 echo "🛑 To stop:"
-echo "   cd $PROJECT_DIR && docker-compose -f docker-compose.yml -f docker-compose.mongo.yml down"
+echo "   cd $PROJECT_DIR && docker-compose -f docker-compose.yml -f docker-compose.mongo.yml -f docker-compose.shorty.yml down"
 echo ""

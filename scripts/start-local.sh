@@ -52,12 +52,12 @@ fi
 # Stop any running containers from these compose files
 echo "🛑 Stopping any existing containers..."
 cd "$PROJECT_DIR"
-docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml down 2>/dev/null || true
+docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml -f docker-compose.shorty.local.yml down 2>/dev/null || true
 echo ""
 
 # Start the local development stack
 echo "🚀 Starting all services..."
-docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml up -d
+docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml -f docker-compose.shorty.local.yml up -d
 echo ""
 
 # Wait a moment for services to initialize
@@ -67,7 +67,7 @@ echo ""
 
 # Show status
 echo "📊 Service Status:"
-docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml ps
+docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml -f docker-compose.shorty.local.yml ps
 echo ""
 
 # Show URLs
@@ -76,6 +76,8 @@ echo ""
 echo "🌐 Available services:"
 echo "   - Main website:    https://${DOMAIN:-localhost}"
 echo "   - Mongo Express:   https://mongo.${DOMAIN:-localhost}"
+echo "   - Shorty:          https://shorty.${DOMAIN:-localhost}"
+echo "   - Shorty API:      https://api.shorty.${DOMAIN:-localhost}"
 echo "   - MongoDB:         mongodb://localhost:${MONGO_PORT:-27017}"
 echo "   - Traefik:         http://localhost:${TRAEFIK_DASHBOARD_PORT:-8083}"
 echo ""
@@ -83,9 +85,9 @@ echo "⚠️  Note: Your browser will show a security warning for self-signed ce
 echo "   You can safely proceed by clicking 'Advanced' and 'Proceed to localhost'."
 echo ""
 echo "📝 Logs:"
-echo "   View all logs:     docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml logs -f"
+echo "   View all logs:     docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml -f docker-compose.shorty.local.yml logs -f"
 echo "   View specific:     docker logs <container-name>"
 echo ""
 echo "🛑 To stop:"
-echo "   cd $PROJECT_DIR && docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml down"
+echo "   cd $PROJECT_DIR && docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml -f docker-compose.shorty.local.yml down"
 echo ""

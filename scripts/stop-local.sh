@@ -13,7 +13,7 @@ echo ""
 cd "$PROJECT_DIR"
 
 # Stop all services
-docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml down
+docker-compose -f docker-compose.local.yml -f docker-compose.mongo.local.yml -f docker-compose.shorty.local.yml down
 
 echo ""
 echo "✅ Local development stack stopped successfully!"
