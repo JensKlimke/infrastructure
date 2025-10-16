@@ -41,9 +41,14 @@ else
 fi
 echo ""
 
+# Pull latest Shorty images from Docker Hub
+echo "📦 Pulling latest Shorty images from Docker Hub..."
+cd "$PROJECT_DIR"
+docker-compose -f docker-compose.shorty.yml pull
+echo ""
+
 # Stop any running containers from these compose files
 echo "🛑 Stopping any existing containers..."
-cd "$PROJECT_DIR"
 docker-compose -f docker-compose.yml -f docker-compose.mongo.yml -f docker-compose.shorty.yml down 2>/dev/null || true
 echo ""
 
