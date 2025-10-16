@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  shorty-mongodb:
+    build:
+      context: ./mongo
+      dockerfile: Dockerfile
+    container_name: shorty-mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${SHORTY_MONGO_ROOT_USERNAME:?SHORTY_MONGO_ROOT_USERNAME environment variable is required}
+      - MONGO_INITDB_ROOT_PASSWORD=${SHORTY_MONGO_ROOT_PASSWORD:?SHORTY_MONGO_ROOT_PASSWORD environment variable is required}
+      - MONGO_INITDB_DATABASE=shorty
+      - MONGO_HOSTNAME=shorty-mongodb
+    volumes:
+      - shorty-mongodb-data:/data/db
+      - shorty-mongodb-config:/data/configdb
+    healthcheck:
+      test: ["CMD", "mongosh", "-u", "${SHORTY_MONGO_ROOT_USERNAME}", "-p", "${SHORTY_MONGO_ROOT_PASSWORD}", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - default
+
+  shorty-backend:
+    image: jensklimke/shorty-backend:latest
+    container_name: shorty-backend
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - CORS_ORIGIN=https://shorty.${DOMAIN}
+      - MONGODB_URI=mongodb://${SHORTY_MONGO_ROOT_USERNAME}:${SHORTY_MONGO_ROOT_PASSWORD}@shorty-mongodb:27017/shorty?authSource=admin
+    depends_on:
+      shorty-mongodb:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      # HTTP router (redirect to HTTPS)
+      - "traefik.http.routers.shorty-backend-http.rule=Host(`api.shorty.${DOMAIN}`)"
+      - "traefik.http.routers.shorty-backend-http.entrypoints=web"
+      - "traefik.http.routers.shorty-backend-http.middlewares=redirect-to-https"
+      # HTTPS OPTIONS router (bypass auth for CORS preflight)
+      - "traefik.http.routers.shorty-backend-options-https.rule=Host(`api.shorty.${DOMAIN}`) && Method(`OPTIONS`)"
+      - "traefik.http.routers.shorty-backend-options-https.entrypoints=websecure"
+      - "traefik.http.routers.shorty-backend-options-https.tls=true"
+      - "traefik.http.routers.shorty-backend-options-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.shorty-backend-options-https.priority=100"
+      # HTTPS router with auth middleware (all other methods)
+      - "traefik.http.routers.shorty-backend-https.rule=Host(`api.shorty.${DOMAIN}`)"
+      - "traefik.http.routers.shorty-backend-https.entrypoints=websecure"
+      - "traefik.http.routers.shorty-backend-https.tls=true"
+      - "traefik.http.routers.shorty-backend-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.shorty-backend-https.priority=1"
+      - "traefik.http.routers.shorty-backend-https.middlewares=auth-middleware"
+      # Service
+      - "traefik.http.services.shorty-backend.loadbalancer.server.port=3001"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - default
+
+  shorty-frontend:
+    image: jensklimke/shorty-frontend:latest
+    container_name: shorty-frontend
+    environment:
+      - VITE_API_URL=https://api.shorty.${DOMAIN}
+    depends_on:
+      shorty-backend:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      # HTTP router (redirect to HTTPS)
+      - "traefik.http.routers.shorty-frontend-http.rule=Host(`shorty.${DOMAIN}`)"
+      - "traefik.http.routers.shorty-frontend-http.entrypoints=web"
+      - "traefik.http.routers.shorty-frontend-http.middlewares=redirect-to-https"
+      # HTTPS router with auth middleware
+      - "traefik.http.routers.shorty-frontend-https.rule=Host(`shorty.${DOMAIN}`)"
+      - "traefik.http.routers.shorty-frontend-https.entrypoints=websecure"
+      - "traefik.http.routers.shorty-frontend-https.tls=true"
+      - "traefik.http.routers.shorty-frontend-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.shorty-frontend-https.middlewares=strip-user-header,auth-middleware"
+      # Service
+      - "traefik.http.services.shorty-frontend.loadbalancer.server.port=8080"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - default
+
+volumes:
+  shorty-mongodb-data:
+    driver: local
+  shorty-mongodb-config:
+    driver: local
+
+networks:
+  default:
+    name: traefik_network
+    external: true

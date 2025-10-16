@@ -43,6 +43,7 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1 = ${DOMAIN}
 DNS.2 = *.${DOMAIN}
+DNS.3 = *.shorty.${DOMAIN}
 IP.1 = 127.0.0.1
 IP.2 = ::1
 EOF
@@ -73,4 +74,4 @@ echo "   1. Add the certificate to your system's trusted certificates"
 echo "   2. Or use mkcert (https://github.com/FiloSottile/mkcert) for automatic trust"
 echo ""
 echo "🔧 For ${DOMAIN} to work locally, add this to /etc/hosts:"
-echo "   127.0.0.1 ${DOMAIN} auth.${DOMAIN} mongo.${DOMAIN}"
+echo "   127.0.0.1 ${DOMAIN} auth.${DOMAIN} mongo.${DOMAIN} api.${DOMAIN} shorty.${DOMAIN} api.shorty.${DOMAIN}"

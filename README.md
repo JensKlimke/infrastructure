@@ -89,6 +89,50 @@ HTTPS is required for local development when:
 - Testing secure cookies and HSTS headers
 - Matching production environment behavior
 
+## Shorty Stack
+
+The infrastructure supports deploying the Shorty URL shortener application as a separate stack that integrates with the main Traefik reverse proxy and authentication middleware.
+
+### Production Deployment
+
+1. **Ensure main stack is running** (creates the shared network):
+   ```bash
+   docker compose up -d
+   ```
+
+2. **Configure Shorty environment variables** in `.env`:
+   ```bash
+   SHORTY_MONGO_ROOT_USERNAME=shorty_admin
+   SHORTY_MONGO_ROOT_PASSWORD=your-secure-password
+   ```
+
+3. **Deploy Shorty stack**:
+   ```bash
+   docker compose -f docker-compose.shorty.yml up -d
+   ```
+
+The Shorty application will be available at:
+- Frontend: `https://shorty.yourdomain.com`
+- Backend API: `https://api.shorty.yourdomain.com`
+
+Both endpoints are protected by the authentication middleware from the main stack.
+
+### Local Development
+
+For local development with self-signed certificates:
+
+```bash
+# Start main stack
+docker compose -f docker-compose.local.yml up -d
+
+# Start Shorty stack
+docker compose -f docker-compose.shorty.local.yml up -d
+```
+
+Access locally at:
+- Frontend: `https://shorty.localhost`
+- Backend API: `https://api.shorty.localhost`
+
 ## Common Commands
 
 ```bash
@@ -98,11 +142,21 @@ docker compose -f docker-compose.local.yml logs -f     # View logs
 docker compose -f docker-compose.local.yml restart     # Restart services
 docker compose -f docker-compose.local.yml down        # Stop services
 
+# Shorty stack (local)
+docker compose -f docker-compose.shorty.local.yml ps
+docker compose -f docker-compose.shorty.local.yml logs -f
+docker compose -f docker-compose.shorty.local.yml down
+
 # Production
 docker compose ps          # Check status
 docker compose logs -f     # View logs
 docker compose restart     # Restart services
 docker compose down        # Stop services
+
+# Shorty stack (production)
+docker compose -f docker-compose.shorty.yml ps
+docker compose -f docker-compose.shorty.yml logs -f
+docker compose -f docker-compose.shorty.yml down
 ```
 
 ## Security

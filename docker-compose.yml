@@ -28,6 +28,8 @@ services:
       retries: 3
       start_period: 5s
     restart: unless-stopped
+    networks:
+      - traefik_network
 
   web:
     build:
@@ -60,6 +62,8 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+    networks:
+      - traefik_network
 
   auth-middleware:
     build:
@@ -104,6 +108,8 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+    networks:
+      - traefik_network
 
   api:
     build:
@@ -133,7 +139,14 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+    networks:
+      - traefik_network
 
 volumes:
   auth-tokens:
     driver: local
+
+networks:
+  traefik_network:
+    name: traefik_network
+    driver: bridge
